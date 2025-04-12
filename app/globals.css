@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --accent: 31 90% 50%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Chart colors */
+    --chart-1: 221 83% 53%;
+    --chart-2: 38 92% 50%;
+    --chart-3: 31 90% 50%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 176 59% 41%;
+
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 221 83% 53%;
+
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-ring: 215 20.2% 65.1%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 31 90% 50%;
+    --accent-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Chart colors */
+    --chart-1: 217.2 91.2% 59.8%;
+    --chart-2: 38 92% 50%;
+    --chart-3: 31 90% 50%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 176 59% 41%;
+
+    /* Sidebar colors */
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 224.3 76.3% 48%;
+
+    --sidebar: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-ring: 217.2 32.6% 17.5%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Glassmorphism */
+.glassmorphism {
+  @apply bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border border-gray-200/50 dark:border-gray-800/50;
+}
+
+/* Animations */
+.animate-spin-slow {
+  animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animated-gradient-bg {
+  @apply bg-gradient-to-br from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 relative overflow-hidden;
+}
+
+.animated-gradient-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+  transform: translateX(-100%);
+  animation: gradient-animation 8s ease infinite;
+}
+
+@keyframes gradient-animation {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-rotateY {
+  animation: rotateY 10s linear infinite;
+}
+
+@keyframes rotateY {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.7);
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 bg-clip-text text-transparent;
+}
+
+/* Gradient primary */
+.gradient-primary {
+  @apply bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Button hover effects */
+.button-hover {
+  @apply transition-all duration-300 hover:shadow-md hover:scale-105;
+}
+
+@layer utilities {
+  .bg-sidebar {
+    background-color: hsl(var(--sidebar));
+  }
+  .text-sidebar-foreground {
+    color: hsl(var(--sidebar-foreground));
+  }
+  .border-sidebar-border {
+    border-color: hsl(var(--sidebar-border));
+  }
+  .bg-sidebar-accent {
+    background-color: hsl(var(--sidebar-accent));
+  }
+  .text-sidebar-accent-foreground {
+    color: hsl(var(--sidebar-accent-foreground));
+  }
+  .ring-sidebar-ring {
+    --tw-ring-color: hsl(var(--sidebar-ring));
+  }
+}
