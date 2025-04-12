@@ -80,7 +80,7 @@ export function AppLayoutAlt({ children }: { children: React.ReactNode }) {
     Array<{
       name: string
       href: string
-      icon: JSX.Element
+      icon: React.ReactElement
       badge?: string | number
       isNew?: boolean
     }>
@@ -280,5 +280,24 @@ export function AppLayoutAlt({ children }: { children: React.ReactNode }) {
     {
       type: "regulatory" as const,
       icon: <Scale className="h-5 w-5" />,
-      label: "Regulatory",\
-      gradient: "from-purple-600 to-purple-400 dark:from-purple
+      label: "Regulatory",
+      gradient: "from-purple-600 to-purple-400 dark:from-purple-500 dark:to-purple-300",
+    },
+    {
+      name: "Risk Monitoring",
+      href: "/risk-monitoring",
+      icon: <AlertCircle className="h-5 w-5" />,
+      badge: 2,
+    },
+    {
+      name: "Reports",
+      href: "/reports",
+      icon: <BarChart3 className="h-5 w-5" />,
+    },
+    {
+      name: "Entities",
+      href: "/entities",
+      icon: <Users className="h-5 w-5" />,
+    },
+  ]
+}

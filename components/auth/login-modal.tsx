@@ -82,7 +82,7 @@ export function LoginModal({ trigger, defaultOpen = false, onClose }: LoginModal
   }
 
   const handleWalletLogin = async () => {
-    if (!window.ethereum) {
+    if (!(window as any).ethereum) {
       toast({
         title: "Wallet not found",
         description: "Please install MetaMask or another Ethereum wallet to continue",
@@ -95,7 +95,7 @@ export function LoginModal({ trigger, defaultOpen = false, onClose }: LoginModal
 
     try {
       // Request account access
-      const provider = new ethers.BrowserProvider(window.ethereum)
+      const provider = new ethers.BrowserProvider((window as any).ethereum)
       const accounts = await provider.send("eth_requestAccounts", [])
       const address = accounts[0]
       setWalletAddress(address)

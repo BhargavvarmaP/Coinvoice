@@ -168,7 +168,9 @@ export interface NotificationType {
   id: string
   title: string
   description: string
+  message: string
   time: string
+  createdAt: string
   read: boolean
   type: "info" | "success" | "warning" | "error"
 }

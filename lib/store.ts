@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { NotificationType, WalletBalance, Token } from "./types"
 
 // Define stakeholder types including regulatory
 export type StakeholderType = "originator" | "investor" | "funder" | "regulatory"
@@ -34,13 +35,17 @@ export interface Asset {
 // Define transaction type
 export interface Transaction {
   id: string
-  type: "send" | "receive" | "swap" | "tokenize" | "redeem"
-  asset: string
+  type: "send" | "receive" | "swap" | "stake" | "unstake" | "claim" | "tokenize"
   amount: number
-  timestamp: Date
+  token?: string
+  asset?: string
+  date?: Date
+  timestamp?: Date
   status: "completed" | "pending" | "failed"
-  counterparty: string
-  txHash: string
+  from?: string
+  to?: string
+  counterparty?: string
+  txHash?: string
 }
 
 // Define invoice type
@@ -84,7 +89,9 @@ export interface MarketplaceListing {
 export interface Notification {
   id: string
   title: string
+  description?: string
   message: string
+  time?: string
   type: "info" | "success" | "warning" | "error"
   read: boolean
   createdAt: Date
@@ -95,7 +102,7 @@ interface AppState {
   // User and authentication
   isAuthenticated: boolean
   userProfile: UserProfile | null
-  notifications: Notification[]
+  notifications: NotificationType[]
   unreadNotificationsCount: number
 
   // UI state
@@ -106,6 +113,10 @@ interface AppState {
   // Wallet state
   assets: Asset[]
   transactions: Transaction[]
+  walletBalances: WalletBalance[]
+  tokens: Token[]
+  refreshWalletBalances: () => void
+  refreshTokens: () => void
 
   // Business data
   invoices: Invoice[]
@@ -117,7 +128,7 @@ interface AppState {
   setDarkMode: (isDark: boolean) => void
   login: (profile: UserProfile) => void
   logout: () => void
-  refreshData: () => void
+  refreshData: (force?: boolean) => void
   markNotificationAsRead: (id: string) => void
   markAllNotificationsAsRead: () => void
   addInvoice: (invoice: Invoice) => void
@@ -193,12 +204,12 @@ const generateMockData = () => {
     {
       id: "tx4",
       type: "swap",
-      asset: "ETH",
+      token: "ETH",
       amount: 0.25,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
+      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
       status: "completed",
-      counterparty: "USDC",
-      txHash: "0x4d5e6f7g8h9i0j1k2l3m",
+      from: "0x4d5e6f7g8h9i0j1k2l3m",
+      to: "USDC",
     },
     {
       id: "tx5",
@@ -462,10 +473,43 @@ export const useAppStore = create<AppState>()(
         isDarkMode: false,
         assets: mockData.assets,
         transactions: mockData.transactions,
+        walletBalances: [],
+        tokens: [],
         invoices: mockData.invoices,
         marketplaceListings: mockData.marketplaceListings,
         notifications: mockData.notifications,
         unreadNotificationsCount: mockData.notifications.filter((n) => !n.read).length,
+        refreshWalletBalances: () => {
+          // Simulate fetching wallet balances
+          set((state) => ({
+            walletBalances: [
+              { token: "CVT", balance: 1250.75, value: 1250.75, change: 2.5 },
+              { token: "USDC", balance: 5000, value: 5000, change: 0.1 },
+              { token: "ETH", balance: 1.25, value: 3750, change: -1.2 }
+            ]
+          }))
+        },
+        refreshTokens: () => {
+          // Simulate fetching tokens
+          set((state) => ({
+            tokens: [
+              {
+                id: "token1",
+                amount: 5000,
+                dueDate: "2025-05-15",
+                price: 4825,
+                yield: "3.5%",
+                issuer: "TechCorp Inc.",
+                risk: "AA",
+                industry: "Technology",
+                category: "Invoice",
+                description: "Software development services invoice token",
+                status: "active",
+                purchaseDate: "2024-04-01"
+              }
+            ]
+          }))
+        },
 
         // Actions
         setStakeholderType: (type) => set({ stakeholderType: type }),

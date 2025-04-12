@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
-import { useStore } from "@/lib/store"
+import { useAppStore } from "@/lib/store"
 import { useEffect, useState } from "react"
 import {
   BarChart,
@@ -50,7 +50,7 @@ import { useAuth } from "@/contexts/auth-context"
 
 export function Dashboard() {
   const { toast } = useToast()
-  const { userProfile, walletBalances, tokens, notifications, transactions, refreshData } = useStore()
+  const { userProfile, walletBalances, tokens, notifications, transactions, refreshData } = useAppStore()
   const [isCreateInvoiceModalOpen, setIsCreateInvoiceModalOpen] = useState(false)
   const { user } = useAuth()
 
@@ -67,10 +67,10 @@ export function Dashboard() {
   }
 
   // Calculate total balance
-  const totalBalance = walletBalances.reduce((sum, balance) => sum + balance.value, 0)
+  const totalBalance = walletBalances.reduce((sum: number, balance: { value: number }) => sum + balance.value, 0)
 
   // Prepare data for charts
-  const pieData = walletBalances.map((balance) => ({
+  const pieData = walletBalances.map((balance: { token: string; value: number }) => ({
     name: balance.token,
     value: balance.value,
   }))
@@ -249,7 +249,7 @@ export function Dashboard() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {pieData.map((entry, index) => (
+                      {pieData.map((_entry: { name: string; value: number }, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -282,8 +282,8 @@ export function Dashboard() {
                       <Badge
                         className="ml-2"
                         variant={
-                          invoice.status === "Paid"
-                            ? "success"
+onials                          invoice.status === "Paid"
+                            ? "default"
                             : invoice.status === "Pending"
                               ? "outline"
                               : "destructive"
@@ -316,7 +316,7 @@ export function Dashboard() {
                         <p className="text-sm font-medium leading-none">
                           {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                         </p>
-                        <p className="text-sm text-muted-foreground">{transaction.date}</p>
+                        <p className="text-sm text-muted-foreground">{transaction.timestamp.toLocaleDateString()}</p>
                       </div>
                       <div className="ml-auto font-medium">
                         {transaction.type === "receive" ? "+" : "-"}
@@ -476,11 +476,10 @@ export function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center">
               <CardTitle>Notifications</CardTitle>
-              <Input
-                placeholder="Search notifications..."
-                className="ml-auto w-[250px]"
-                icon={<Search className="h-4 w-4 opacity-50" />}
-              />
+              <div className="relative ml-auto w-[250px]">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search notifications..." className="pl-8" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -515,8 +514,8 @@ export function Dashboard() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <p className="font-medium">{notification.title}</p>
-                        <p className="text-sm text-muted-foreground">{notification.description}</p>
-                        <p className="text-xs text-muted-foreground">{notification.time}</p>
+                        <p className="text-sm text-muted-foreground">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground">{notification.createdAt.toLocaleDateString()}</p>
                       </div>
                       {!notification.read && (
                         <Badge variant="secondary" className="ml-auto">
@@ -540,7 +539,7 @@ export function Dashboard() {
         </TabsContent>
       </Tabs>
 
-      <CreateInvoiceModal open={isCreateInvoiceModalOpen} onOpenChange={setIsCreateInvoiceModalOpen} />
+      <CreateInvoiceModal isOpen={isCreateInvoiceModalOpen} onClose={() => setIsCreateInvoiceModalOpen(false)} />
     </div>
   )
 }

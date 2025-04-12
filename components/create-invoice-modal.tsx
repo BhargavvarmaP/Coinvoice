@@ -24,13 +24,14 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
 interface CreateInvoiceModalProps {
+  isOpen: boolean
+  onClose: () => void
   onSuccess?: () => void
   trigger?: React.ReactNode
 }
 
-export function CreateInvoiceModal({ onSuccess, trigger }: CreateInvoiceModalProps) {
+export function CreateInvoiceModal({ isOpen, onClose, onSuccess, trigger }: CreateInvoiceModalProps) {
   const { toast } = useToast()
-  const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date>()
 
   const [formData, setFormData] = useState({
@@ -72,14 +73,14 @@ export function CreateInvoiceModal({ onSuccess, trigger }: CreateInvoiceModalPro
       description: "",
     })
     setDate(undefined)
-    setOpen(false)
+    onClose()
 
     // Call onSuccess callback if provided
     onSuccess?.()
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -160,7 +161,7 @@ export function CreateInvoiceModal({ onSuccess, trigger }: CreateInvoiceModalPro
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit">Create Invoice</Button>

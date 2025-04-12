@@ -342,7 +342,7 @@ export function WalletDashboard() {
                       <div>
                         <h3 className="font-medium capitalize">{transaction.type}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(transaction.timestamp).toLocaleString()}
+                          {transaction.timestamp ? new Date(transaction.timestamp).toLocaleString() : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -450,4 +450,9 @@ export function WalletDashboard() {
                   value={sendAmount}
                   onChange={(e) => setSendAmount(e.target.value)}
                 />
-                \
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+  </div>

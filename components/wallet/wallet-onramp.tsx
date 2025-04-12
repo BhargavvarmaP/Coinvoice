@@ -38,7 +38,7 @@ export function WalletOnramp() {
     toast({
       title: "Purchase Initiated",
       description: `You are buying ${buyAmount} ${buyToken} with ${buyCurrency}`,
-      variant: "success",
+      variant: "default",
     })
     
     setBuyAmount("")
@@ -51,7 +51,7 @@ export function WalletOnramp() {
     toast({
       title: "Sale Initiated",
       description: `You are selling ${sellAmount} ${sellToken} for ${sellCurrency}`,
-      variant: "success",
+      variant: "default",
     })
     
     setSellAmount("")

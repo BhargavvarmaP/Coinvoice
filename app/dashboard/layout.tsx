@@ -1,10 +1,10 @@
 import type React from "react"
-import { AppLayoutAlt } from "@/components/app-layout-alt"
+import { EnhancedAppLayout } from "@/components/enhanced-app-layout"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <AppLayoutAlt>{children}</AppLayoutAlt>
+  return <EnhancedAppLayout>{children}</EnhancedAppLayout>
 }

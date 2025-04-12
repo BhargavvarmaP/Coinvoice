@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { format, addDays } from "date-fns"
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -21,7 +22,7 @@ import { useAppStore } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import type { DateRange } from "react-day-picker"
-import { addDays } from "date-fns"
+
 
 export function WalletTransactions() {
   const { transactions } = useAppStore()
@@ -46,11 +47,20 @@ export function WalletTransactions() {
       }
 
       // Date range filter (simplified for mock data)
-      // In a real app, we would convert tx.date to a Date object and check if it's within the range
+      if (dateRange?.from && dateRange?.to && tx.date) {
+        const txDate = new Date(tx.date)
+        if (txDate < dateRange.from || txDate > dateRange.to) {
+          return false
+        }
+      }
 
       return true
     })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : a.timestamp ? new Date(a.timestamp).getTime() : 0
+      const dateB = b.date ? new Date(b.date).getTime() : b.timestamp ? new Date(b.timestamp).getTime() : 0
+      return dateB - dateA
+    })
 
   // Get transaction icon based on type
   const getTransactionIcon = (type: string, status: string) => {
@@ -146,7 +156,7 @@ export function WalletTransactions() {
           </SelectContent>
         </Select>
 
-        <DatePickerWithRange className="w-[300px]" date={dateRange} setDate={setDateRange} />
+        <DatePickerWithRange className="w-[300px]" value={dateRange} onChange={setDateRange} />
       </div>
 
       <Card className="glassmorphism">
@@ -172,7 +182,8 @@ export function WalletTransactions() {
                           <div className="font-medium">{getTransactionTitle(tx)}</div>
                           <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
-                            {tx.date}
+                            {typeof tx.date === 'string' ? tx.date : tx.date instanceof Date ? format(tx.date, 'MMM dd, yyyy') : 
+                             tx.timestamp instanceof Date ? format(tx.timestamp, 'MMM dd, yyyy') : 'Unknown date'}
                           </div>
                         </div>
 
