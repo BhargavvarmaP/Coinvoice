@@ -33,21 +33,10 @@ export interface UserProfile {
   id: string
   name: string
   email: string
-  role: UserRole | string
   walletAddress: string
-  company?: string
   avatar?: string
   coinPoints: number
-  kycStatus: "verified" | "pending" | "not_started"
-  twoFactorEnabled: boolean
-  notifications?: {
-    email: boolean
-    push: boolean
-    sms: boolean
-  }
-  permissions?: Permission[]
-  createdAt?: Date
-  lastLogin?: Date
+  role: string
 }
 
 // Authentication types
@@ -85,17 +74,12 @@ export interface OAuthLoginData {
 // Token and marketplace types
 export interface Token {
   id: string
-  amount: number
+  symbol: string
+  name: string
+  value: number
   dueDate: string
-  price: number
-  yield: string
   issuer: string
-  risk: string
-  industry: string
-  category: string
-  description: string
-  status?: string
-  purchaseDate?: string
+  status: 'active' | 'expired' | 'redeemed'
 }
 
 export interface MarketplaceListing {
@@ -121,36 +105,41 @@ export interface MarketplaceListing {
 // Invoice types
 export interface Invoice {
   id: string
-  invoiceNumber: string
+  client: string
   amount: number
-  dueDate: string
-  issueDate: string
-  company: string
+  status: 'Paid' | 'Pending' | 'Failed' | 'Overdue'
+  date: string
+  dueDate?: string
   description?: string
-  status: "draft" | "pending" | "tokenized" | "paid" | "overdue"
-  tokenId?: string
-  attachmentUrl?: string
-  createdAt: Date
-  updatedAt: Date
+  currency?: string
+  items?: InvoiceItem[]
+}
+
+export interface InvoiceItem {
+  id: string
+  description: string
+  quantity: number
+  unitPrice: number
+  total: number
 }
 
 // Wallet and transaction types
 export interface WalletBalance {
-  token: string
-  balance: number
-  value: number
-  change: number
+  total: number
+  available: number
+  locked: number
+  walletAddress: string
 }
 
 export interface Transaction {
   id: string
-  type: "send" | "receive" | "swap" | "stake" | "unstake" | "claim"
+  type: 'send' | 'receive' | 'swap' | 'tokenize' | 'redeem'
   amount: number
   token: string
-  date: string
-  status: "completed" | "pending" | "failed"
-  from?: string
-  to?: string
+  timestamp: string | Date
+  status: 'completed' | 'pending' | 'failed'
+  counterparty?: string
+  description?: string
 }
 
 export interface Asset {
@@ -164,15 +153,13 @@ export interface Asset {
 }
 
 // Notification types
-export interface NotificationType {
+export interface Notification {
   id: string
   title: string
-  description: string
   message: string
-  time: string
-  createdAt: string
+  type: 'info' | 'success' | 'warning' | 'error'
   read: boolean
-  type: "info" | "success" | "warning" | "error"
+  createdAt: string | Date
 }
 
 // Regulatory and compliance types
@@ -258,4 +245,21 @@ export interface TestResult {
   duration: number
   error?: string
   screenshot?: string
+}
+
+export interface AppState {
+  userProfile: UserProfile | null
+  stakeholderType: StakeholderType
+  sidebarCollapsed: boolean
+  assets: Asset[]
+  walletBalance: WalletBalance
+  tokens: Token[]
+  notifications: Notification[]
+  transactions: Transaction[]
+  unreadNotificationsCount: number
+  isLoading: boolean
+  error: string | null
+  setStakeholderType: (type: StakeholderType) => void
+  setSidebarCollapsed: (collapsed: boolean) => void
+  refreshData: (showToast?: boolean) => Promise<void>
 }

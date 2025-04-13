@@ -15,7 +15,7 @@ export function renderWithProviders(ui: React.ReactElement) {
         {ui}
         <Toaster />
       </AuthProvider>
-    </ThemeProvider>,
+    </ThemeProvider>
   )
 }
 

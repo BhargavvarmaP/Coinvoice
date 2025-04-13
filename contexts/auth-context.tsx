@@ -13,6 +13,8 @@ import type {
   Permission,
 } from "@/lib/types"
 import { ethers } from "ethers"
+import { jwtDecode } from "jwt-decode"
+import { v4 as uuidv4 } from "uuid"
 
 // Mock user data for demonstration
 const MOCK_USERS = [
@@ -102,6 +104,25 @@ const MOCK_USERS = [
   },
 ]
 
+interface AuthToken {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+}
+
+interface DecodedToken {
+  sub: string
+  email: string
+  role: string
+  permissions: string[]
+  exp: number
+}
+
+const TOKEN_KEY = "coinvoice_auth_token"
+const REFRESH_TOKEN_KEY = "coinvoice_refresh_token"
+const USER_KEY = "coinvoice_user"
+const SESSION_KEY = "coinvoice_session"
+
 type AuthContextType = {
   user: UserProfile | null
   isLoading: boolean
@@ -116,9 +137,37 @@ type AuthContextType = {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>
   hasPermission: (permission: Permission) => boolean
   clearError: () => void
+  refreshSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const generateTokens = (user: UserProfile): AuthToken => {
+  const accessToken = `mock_access_token_${uuidv4()}`
+  const refreshToken = `mock_refresh_token_${uuidv4()}`
+  return {
+    accessToken,
+    refreshToken,
+    expiresIn: 3600,
+  }
+}
+
+const decodeToken = (token: string): DecodedToken => {
+  try {
+    return JSON.parse(token)
+  } catch (error) {
+    throw new Error("Invalid token format")
+  }
+}
+
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const decoded = decodeToken(token)
+    return decoded.exp < Math.floor(Date.now() / 1000)
+  } catch {
+    return true
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -128,24 +177,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { toast } = useToast()
 
-  // Check for existing session on mount
+  // Initialize session
   useEffect(() => {
-    const storedUser = localStorage.getItem("coinvoice_user")
-    if (storedUser) {
+    const initializeSession = async () => {
       try {
-        setUser(JSON.parse(storedUser))
+        const token = localStorage.getItem(TOKEN_KEY)
+        const storedUser = localStorage.getItem(USER_KEY)
+
+        if (token && storedUser) {
+          if (isTokenExpired(token)) {
+            // Token expired, try to refresh
+            await refreshSession()
+          } else {
+            setUser(JSON.parse(storedUser))
+          }
+        }
       } catch (error) {
-        console.error("Failed to parse stored user:", error)
-        localStorage.removeItem("coinvoice_user")
+        console.error("Session initialization error:", error)
+        setError("Failed to initialize session")
+      } finally {
+        setIsLoading(false)
       }
     }
-    setIsLoading(false)
+
+    initializeSession()
   }, [])
 
+  // Store session
+  const storeSession = (userData: UserProfile, token: AuthToken, rememberMe: boolean = false) => {
+    const storage = rememberMe ? localStorage : sessionStorage
+    storage.setItem(TOKEN_KEY, token.accessToken)
+    storage.setItem(USER_KEY, JSON.stringify(userData))
+    setUser(userData)
+  }
+
+  // Clear session
+  const clearSession = () => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    sessionStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem(USER_KEY)
+    setUser(null)
+  }
+
   // Clear error
-  const clearError = useCallback(() => {
+  const clearError = () => {
     setError(null)
-  }, [])
+  }
+
+  // Refresh session
+  const refreshSession = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)
+      if (!token) throw new Error("No token found")
+
+      // In a real app, you would call your API to refresh the token
+      // For now, we'll just generate a new one
+      const storedUser = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY)
+      if (!storedUser) throw new Error("No user found")
+
+      const userData = JSON.parse(storedUser)
+      const newToken = generateTokens(userData)
+      storeSession(userData, newToken)
+    } catch (error) {
+      console.error("Session refresh error:", error)
+      clearSession()
+      throw error
+    }
+  }
 
   // Check if user has a specific permission
   const hasPermission = useCallback(
@@ -486,27 +585,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        error,
-        login,
-        loginWithWallet,
-        loginWithOAuth,
-        signup,
-        logout,
-        resetPassword,
-        updateProfile,
-        hasPermission,
-        clearError,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  const value = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    error,
+    login,
+    loginWithWallet,
+    loginWithOAuth,
+    signup,
+    logout,
+    resetPassword,
+    updateProfile,
+    hasPermission,
+    clearError,
+    refreshSession,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

@@ -181,34 +181,15 @@ const generateNotification = (overrides = {}): NotificationType => {
 
 // Generate a wallet balance
 const generateWalletBalance = (overrides = {}): WalletBalance => {
-  const tokens = ["CVT", "USDC", "USDT", "ETH", "BTC", "DAI"]
-  const token = faker.helpers.arrayElement(tokens)
-  const balance = faker.number.float({
-    min: 0.1,
-    max: token === "BTC" ? 2 : token === "ETH" ? 10 : 10000,
-    precision: 0.001,
-  })
-
-  let value
-  switch (token) {
-    case "BTC":
-      value = balance * 60000
-      break
-    case "ETH":
-      value = balance * 3000
-      break
-    case "CVT":
-      value = balance * 1.2
-      break
-    default:
-      value = balance
-  }
+  const total = faker.number.float({ min: 1000, max: 10000, precision: 0.01 })
+  const available = faker.number.float({ min: 500, max: total, precision: 0.01 })
+  const locked = total - available
 
   return {
-    token,
-    balance,
-    value,
-    change: faker.number.float({ min: -5, max: 5, precision: 0.01 }),
+    total,
+    available,
+    locked,
+    walletAddress: faker.finance.ethereumAddress(),
     ...overrides,
   }
 }
@@ -656,6 +637,13 @@ export const generateMockData = (refresh = false) => {
   const entitiesCount = refresh ? faker.number.int({ min: 10, max: 20 }) : 15
   const usersCount = refresh ? faker.number.int({ min: 5, max: 15 }) : 10
 
+  const walletBalance = {
+    total: faker.number.float({ min: 1000, max: 10000, precision: 0.01 }),
+    available: faker.number.float({ min: 500, max: 8000, precision: 0.01 }),
+    locked: faker.number.float({ min: 100, max: 2000, precision: 0.01 }),
+    walletAddress: faker.finance.ethereumAddress()
+  }
+
   return {
     tokens: Array.from({ length: tokenCount }, () => generateToken()),
     myListings: Array.from({ length: myListingsCount }, () =>
@@ -670,7 +658,7 @@ export const generateMockData = (refresh = false) => {
       }),
     ),
     notifications: Array.from({ length: notificationsCount }, () => generateNotification()),
-    walletBalances: Array.from({ length: walletBalancesCount }, () => generateWalletBalance()),
+    walletBalance,
     transactions: Array.from({ length: transactionsCount }, () => generateTransaction()),
     invoices: Array.from({ length: invoicesCount }, () => generateInvoice()),
     marketplaceListings: Array.from({ length: marketplaceListingsCount }, () => generateMarketplaceListing()),

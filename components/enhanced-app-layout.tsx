@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { EnhancedSidebar } from "@/components/enhanced-sidebar"
+import { AppSidebar } from "@/components/sidebar"
 import { cn } from "@/lib/utils"
 
 interface EnhancedAppLayoutProps {
@@ -14,6 +14,7 @@ interface EnhancedAppLayoutProps {
 export function EnhancedAppLayout({ children }: EnhancedAppLayoutProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
+  const { sidebarCollapsed } = useAppStore()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,12 +26,15 @@ export function EnhancedAppLayout({ children }: EnhancedAppLayoutProps) {
   }, [])
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="relative flex min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
       {/* Sidebar */}
-      <EnhancedSidebar />
+      <AppSidebar />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "flex-1 flex flex-col transition-all duration-300",
+        sidebarCollapsed ? "ml-0 md:ml-16" : "ml-0 md:ml-64"
+      )}>
         <main className={cn(
           "flex-1 p-4 md:p-6 overflow-auto transition-all duration-300",
           scrolled && "pt-4 md:pt-6"

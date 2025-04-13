@@ -22,40 +22,46 @@ export function EnhancedFeaturesSection() {
   
   const features = [
     {
-      icon: <CreditCard className="h-10 w-10 text-blue-600 dark:text-blue-500" />,
+      icon: <CreditCard className="h-10 w-10 text-white" />,
       title: "Invoice Tokenization",
       description: "Convert invoices into tradable tokens (CVT) with AI-powered verification.",
       gradient: "from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300",
+      iconAnimation: { rotate: [0, 5, 0, -5, 0] }
     },
     {
-      icon: <RefreshCw className="h-10 w-10 text-amber-500 dark:text-amber-400" />,
+      icon: <RefreshCw className="h-10 w-10 text-white" />,
       title: "Marketplace Trading",
       description: "Buy and sell invoice tokens with transparent pricing and real-time updates.",
       gradient: "from-amber-600 to-amber-400 dark:from-amber-500 dark:to-amber-300",
+      iconAnimation: { rotate: [0, 360] }
     },
     {
-      icon: <Shield className="h-10 w-10 text-purple-600 dark:text-purple-500" />,
+      icon: <Shield className="h-10 w-10 text-white" />,
       title: "Zero-Knowledge Payments",
       description: "Make private, secure payments with optional zero-knowledge proof technology.",
       gradient: "from-purple-600 to-purple-400 dark:from-purple-500 dark:to-purple-300",
+      iconAnimation: { scale: [1, 1.1, 1] }
     },
     {
-      icon: <LineChart className="h-10 w-10 text-blue-600 dark:text-blue-500" />,
+      icon: <LineChart className="h-10 w-10 text-white" />,
       title: "Real-time Analytics",
       description: "Track performance with interactive visualizations and actionable insights.",
       gradient: "from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300",
+      iconAnimation: { y: [0, -5, 0, 5, 0] }
     },
     {
-      icon: <Lock className="h-10 w-10 text-amber-500 dark:text-amber-400" />,
+      icon: <Lock className="h-10 w-10 text-white" />,
       title: "Cross-chain Bridge",
       description: "Seamlessly move assets across multiple blockchain networks.",
       gradient: "from-amber-600 to-amber-400 dark:from-amber-500 dark:to-amber-300",
+      iconAnimation: { scale: [1, 1.05, 1] }
     },
     {
-      icon: <DollarSign className="h-10 w-10 text-purple-600 dark:text-purple-500" />,
+      icon: <DollarSign className="h-10 w-10 text-white" />,
       title: "CoinPoints Rewards",
       description: "Earn rewards for platform activity, redeemable for fee discounts and perks.",
       gradient: "from-purple-600 to-purple-400 dark:from-purple-500 dark:to-purple-300",
+      iconAnimation: { y: [0, -3, 0] }
     },
   ]
 
@@ -113,9 +119,32 @@ export function EnhancedFeaturesSection() {
                 }}
               >
                 <div className="mb-4">
-                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center`}>
-                    {feature.icon}
-                  </div>
+                  <motion.div 
+                    className={`w-16 h-16 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center relative overflow-hidden`}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 bg-white/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    {/* Icon with animation */}
+                    <motion.div
+                      animate={feature.iconAnimation}
+                      transition={{ 
+                        duration: 2, 
+                        repeat: Infinity, 
+                        repeatType: "reverse",
+                        ease: "easeInOut" 
+                      }}
+                      className="relative z-10"
+                    >
+                      {feature.icon}
+                    </motion.div>
+                    
+                    {/* Decorative elements */}
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white/30" />
+                    <div className="absolute -top-1 -left-1 w-3 h-3 rounded-full bg-white/20" />
+                  </motion.div>
                 </div>
                 <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4 flex-grow">{feature.description}</p>
@@ -155,24 +184,51 @@ export function EnhancedFeaturesSection() {
                   enterprise-grade API. Compatible with major ERP and accounting software.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <div className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+                  <motion.div 
+                    className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
                     <div className="flex items-center">
-                      <Zap className="w-3 h-3 mr-1" />
+                      <motion.div
+                        animate={{ rotate: [0, 15, 0, -15, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        <Zap className="w-3 h-3 mr-1" />
+                      </motion.div>
                       Real-time Sync
                     </div>
-                  </div>
-                  <div className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm">
+                  </motion.div>
+                  <motion.div 
+                    className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
                     <div className="flex items-center">
-                      <Globe className="w-3 h-3 mr-1" />
+                      <motion.div
+                        animate={{ rotate: [0, 10, 0, -10, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        <Globe className="w-3 h-3 mr-1" />
+                      </motion.div>
                       Global Support
                     </div>
-                  </div>
-                  <div className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm">
+                  </motion.div>
+                  <motion.div 
+                    className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
                     <div className="flex items-center">
-                      <Shield className="w-3 h-3 mr-1" />
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                      </motion.div>
                       SOC 2 Compliant
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
               <div className="md:w-1/2 relative">

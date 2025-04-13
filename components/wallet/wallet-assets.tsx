@@ -9,25 +9,25 @@ import { ArrowUpDown, ChevronDown, ChevronUp, DollarSign, Eye, EyeOff, LineChart
 import { useAppStore } from "@/lib/store"
 
 export function WalletAssets() {
-  const { walletBalances } = useAppStore()
+  const { walletBalance } = useAppStore()
   const [hideSmallBalances, setHideSmallBalances] = useState(false)
   const [sortBy, setSortBy] = useState("value-desc")
 
   // Calculate total balance
-  const totalBalance = walletBalances.reduce((total, balance) => total + balance.value, 0)
+  const totalBalance = walletBalance.total
 
-  // Filter and sort assets
-  const filteredAssets = walletBalances
-    .filter((asset) => !hideSmallBalances || asset.value > 1)
-    .sort((a, b) => {
-      if (sortBy === "value-desc") return b.value - a.value
-      if (sortBy === "value-asc") return a.value - b.value
-      if (sortBy === "name-asc") return a.token.localeCompare(b.token)
-      if (sortBy === "name-desc") return b.token.localeCompare(a.token)
-      if (sortBy === "change-desc") return b.change - a.change
-      if (sortBy === "change-asc") return a.change - b.change
-      return 0
-    })
+  // Since we no longer have an array of balances, we'll need to create a single asset from the walletBalance
+  const filteredAssets = [
+    {
+      id: "main-balance",
+      name: "Main Balance",
+      symbol: "USD",
+      balance: walletBalance.total,
+      value: walletBalance.total,
+      change24h: 0,
+      icon: "/icons/usd.svg"
+    }
+  ]
 
   // Get change color based on value
   const getChangeColor = (change: number) => {
@@ -108,7 +108,7 @@ export function WalletAssets() {
           <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {filteredAssets.map((asset, index) => (
               <motion.div
-                key={asset.token}
+                key={asset.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -116,24 +116,26 @@ export function WalletAssets() {
               >
                 <div className="col-span-2 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    {getTokenIcon(asset.token)}
+                    {getTokenIcon(asset.symbol)}
                   </div>
                   <div>
-                    <div className="font-medium">{asset.token}</div>
+                    <div className="font-medium">{asset.name}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {asset.token === "CVT"
-                        ? "Coinvoice Token"
-                        : asset.token === "USDC"
-                          ? "USD Coin"
-                          : asset.token === "USDT"
-                            ? "Tether"
-                            : asset.token === "ETH"
-                              ? "Ethereum"
-                              : asset.token === "BTC"
-                                ? "Bitcoin"
-                                : asset.token === "DAI"
-                                  ? "Dai"
-                                  : "Token"}
+                      {asset.symbol === "USD"
+                        ? "USD"
+                        : asset.symbol === "CVT"
+                          ? "Coinvoice Token"
+                          : asset.symbol === "USDC"
+                            ? "USD Coin"
+                            : asset.symbol === "USDT"
+                              ? "Tether"
+                              : asset.symbol === "ETH"
+                                ? "Ethereum"
+                                : asset.symbol === "BTC"
+                                  ? "Bitcoin"
+                                  : asset.symbol === "DAI"
+                                    ? "Dai"
+                                    : "Token"}
                     </div>
                   </div>
                 </div>
@@ -147,15 +149,15 @@ export function WalletAssets() {
 
                 <div className="text-right font-medium">${asset.value.toLocaleString()}</div>
 
-                <div className={`text-right flex items-center justify-end gap-1 ${getChangeColor(asset.change)}`}>
-                  {asset.change > 0 ? (
+                <div className={`text-right flex items-center justify-end gap-1 ${getChangeColor(asset.change24h)}`}>
+                  {asset.change24h > 0 ? (
                     <ChevronUp className="h-4 w-4" />
-                  ) : asset.change < 0 ? (
+                  ) : asset.change24h < 0 ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
                     <ArrowUpDown className="h-4 w-4" />
                   )}
-                  {Math.abs(asset.change).toFixed(2)}%
+                  {Math.abs(asset.change24h).toFixed(2)}%
                 </div>
               </motion.div>
             ))}

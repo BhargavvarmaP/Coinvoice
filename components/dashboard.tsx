@@ -41,12 +41,27 @@ import {
   Search,
   Settings,
   Users,
+  Shield,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { CreateInvoiceModal } from "@/components/create-invoice-modal"
 import { useAuth } from "@/contexts/auth-context"
+import { motion } from "framer-motion"
+import { GlassCard } from "@/components/ui/glass-card"
+import { BarChart as CustomBarChart } from "@/components/charts/bar-chart"
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    // Check if date is valid
+    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+  } catch (error) {
+    return 'Invalid date';
+  }
+}
 
 export function Dashboard() {
   const { toast } = useToast()
@@ -126,8 +141,52 @@ export function Dashboard() {
     },
   ]
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  }
+
+  const chartData = {
+    labels: ["Feb", "Mar", "Apr", "May", "Jun"],
+    datasets: [
+      {
+        label: "Invoices",
+        data: [65, 75, 85, 70, 80],
+        backgroundColor: "rgb(99, 102, 241)",
+      },
+      {
+        label: "Payments",
+        data: [55, 65, 75, 60, 70],
+        backgroundColor: "rgb(74, 222, 128)",
+      },
+    ],
+  }
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <motion.div
+      className="p-6 space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex items-center gap-2">
@@ -165,99 +224,130 @@ export function Dashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalBalance.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">+{(Math.random() * 10).toFixed(2)}% from last month</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Invoices</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">24</div>
-                <p className="text-xs text-muted-foreground">
-                  {recentInvoices.filter((i) => i.status === "Pending").length} pending
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Tokens</CardTitle>
-                <BadgeDollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{tokens.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {tokens.filter((t) => t.dueDate > new Date().toISOString().split("T")[0]).length} not due yet
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">CoinPoints</CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{userProfile?.coinPoints || 0}</div>
-                <p className="text-xs text-muted-foreground">+120 this week</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">$</span>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-bold">${totalBalance.toLocaleString()}</h2>
+                    <p className="text-sm text-muted-foreground">Total Balance</p>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-bold">24</h2>
+                    <p className="text-sm text-muted-foreground">Invoices</p>
+                    <div className="flex items-center text-xs text-emerald-500">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      <span>1 pending</span>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-bold">{tokens.length}</h2>
+                    <p className="text-sm text-muted-foreground">Active Tokens</p>
+                    <p className="text-xs text-muted-foreground">
+                      {tokens.filter((t) => t.dueDate > new Date().toISOString().split("T")[0]).length} not due yet
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-bold">{userProfile?.coinPoints || 0}</h2>
+                    <p className="text-sm text-muted-foreground">CoinPoints</p>
+                    <div className="flex items-center text-xs text-emerald-500">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      <span>+120 this week</span>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="invoices" fill="#8884d8" name="Invoices" />
-                    <Bar dataKey="payments" fill="#82ca9d" name="Payments" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Portfolio</CardTitle>
-                <CardDescription>Your asset allocation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((_entry: { name: string; value: number }, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`$${value}`, "Value"]} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Overview</h3>
+                      <p className="text-sm text-muted-foreground">Monthly performance</p>
+                    </div>
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <CustomBarChart data={chartData} />
+                </div>
+              </GlassCard>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6 hover:shadow-lg transition-shadow">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Portfolio</h3>
+                      <p className="text-sm text-muted-foreground">Your asset allocation</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Invoices</p>
+                          <p className="text-sm text-muted-foreground">12 active</p>
+                        </div>
+                      </div>
+                      <p className="text-lg font-semibold">$24,500</p>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Guarantees</p>
+                          <p className="text-sm text-muted-foreground">4 active</p>
+                        </div>
+                      </div>
+                      <p className="text-lg font-semibold">$12,800</p>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -282,7 +372,7 @@ export function Dashboard() {
                       <Badge
                         className="ml-2"
                         variant={
-onials                          invoice.status === "Paid"
+                          invoice.status === "Paid"
                             ? "default"
                             : invoice.status === "Pending"
                               ? "outline"
@@ -316,7 +406,7 @@ onials                          invoice.status === "Paid"
                         <p className="text-sm font-medium leading-none">
                           {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                         </p>
-                        <p className="text-sm text-muted-foreground">{transaction.timestamp.toLocaleDateString()}</p>
+                        <p className="text-sm text-muted-foreground">{formatDate(transaction.timestamp)}</p>
                       </div>
                       <div className="ml-auto font-medium">
                         {transaction.type === "receive" ? "+" : "-"}
@@ -515,7 +605,7 @@ onials                          invoice.status === "Paid"
                       <div className="flex-1 space-y-1">
                         <p className="font-medium">{notification.title}</p>
                         <p className="text-sm text-muted-foreground">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground">{notification.createdAt.toLocaleDateString()}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(notification.createdAt)}</p>
                       </div>
                       {!notification.read && (
                         <Badge variant="secondary" className="ml-auto">
@@ -540,6 +630,6 @@ onials                          invoice.status === "Paid"
       </Tabs>
 
       <CreateInvoiceModal isOpen={isCreateInvoiceModalOpen} onClose={() => setIsCreateInvoiceModalOpen(false)} />
-    </div>
+    </motion.div>
   )
 }

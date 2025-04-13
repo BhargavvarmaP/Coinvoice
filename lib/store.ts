@@ -134,6 +134,8 @@ interface AppState {
   addInvoice: (invoice: Invoice) => void
   updateInvoice: (id: string, updates: Partial<Invoice>) => void
   deleteInvoice: (id: string) => void
+  walletBalance: WalletBalance | null
+  setWalletBalance: (balance: WalletBalance | null) => void
 }
 
 // Generate mock data
@@ -510,6 +512,8 @@ export const useAppStore = create<AppState>()(
             ]
           }))
         },
+        walletBalance: null,
+        setWalletBalance: (balance) => set({ walletBalance: balance }),
 
         // Actions
         setStakeholderType: (type) => set({ stakeholderType: type }),

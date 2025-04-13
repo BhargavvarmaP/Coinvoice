@@ -1,12 +1,15 @@
 "use client"
 import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 export function Logo({
   variant = "default",
   size = "md",
+  className,
 }: {
   variant?: "default" | "icon" | "animated" | "enterprise";
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg";
+  className?: string;
 }) {
   const sizeClasses = {
     sm: "text-lg",
@@ -16,85 +19,92 @@ export function Logo({
 
   const containerVariants = {
     initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    hover: { scale: 1.03 }
-  }
-
-  const firstTextVariants = {
-    initial: { opacity: 0, x: -10 },
-    animate: { opacity: 1, x: 0 },
-    hover: { x: -3 }
-  }
-
-  const secondTextVariants = {
-    initial: { opacity: 0, x: 10 },
-    animate: { opacity: 1, x: 0 },
-    hover: { x: 3 }
-  }
-
-  // Updated letter animation
-  const generateLetterVariants = (index: number) => ({
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
+    animate: { 
+      opacity: 1,
+      transition: { duration: 0.5 }
+    },
     hover: { 
-      scale: 1 + Math.cos(index * 0.5) * 0.2,
-      rotate: Math.sin(index * 0.7) * 10,
-      transition: {
-        duration: 0.4,
-        repeat: Infinity,
-        repeatType: "reverse" as const,
-      }
+      scale: 1.02,
+      transition: { duration: 0.2 }
     }
-  })
+  }
 
-  // Handle different variants
+  const iconVariants = {
+    initial: { scale: 0, rotate: -180 },
+    animate: { 
+      scale: 1, 
+      rotate: 0,
+      transition: { 
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }
+    },
+    hover: { 
+      scale: 1.1,
+      rotate: 5,
+      transition: { duration: 0.2 }
+    }
+  }
+
+  const textVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        duration: 0.5,
+        delay: 0.2
+      }
+    },
+    hover: { 
+      y: -2,
+      transition: { duration: 0.2 }
+    }
+  }
+
+  const gradientText = "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
+
   if (variant === "icon") {
     return (
-      <motion.span
-        className={`${sizeClasses[size]} font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent font-serif`}
+      <motion.div
+        className={cn("flex items-center justify-center", className)}
+        variants={containerVariants}
         initial="initial"
         animate="animate"
         whileHover="hover"
-        variants={containerVariants}
       >
-        C
-      </motion.span>
+        <motion.div
+          className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary shadow-lg shadow-primary/20"
+          variants={iconVariants}
+        >
+          <span className="text-primary-foreground font-bold text-lg">C</span>
+        </motion.div>
+      </motion.div>
     )
   }
 
   if (variant === "animated") {
-    const invoiceText = "invoice".split("");
-    
     return (
       <motion.div
-        className={`${sizeClasses[size]} flex items-center font-serif`}
+        className={cn("flex items-center gap-2", sizeClasses[size], className)}
+        variants={containerVariants}
         initial="initial"
         animate="animate"
         whileHover="hover"
-        variants={containerVariants}
       >
-        <motion.span
-          variants={firstTextVariants}
-          transition={{ duration: 0.5 }}
-          className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent font-bold"
+        <motion.div
+          className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary shadow-lg shadow-primary/20"
+          variants={iconVariants}
         >
-          Co
+          <span className="text-primary-foreground font-bold text-lg">C</span>
+        </motion.div>
+        <motion.span 
+          className="font-bold text-foreground"
+          variants={textVariants}
+        >
+          oinvoice
         </motion.span>
-        <div className="flex">
-          {invoiceText.map((letter, i) => (
-            <motion.span
-              key={i}
-              variants={generateLetterVariants(i)}
-              transition={{ 
-                duration: 0.5, 
-                delay: 0.1 + i * 0.03 
-              }}
-              className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent"
-            >
-              {letter}
-            </motion.span>
-          ))}
-        </div>
       </motion.div>
     )
   }
@@ -102,53 +112,55 @@ export function Logo({
   if (variant === "enterprise") {
     return (
       <motion.div
-        className={`${sizeClasses[size]} flex flex-col font-serif`}
+        className={cn("flex items-center gap-2", sizeClasses[size], className)}
+        variants={containerVariants}
         initial="initial"
         animate="animate"
         whileHover="hover"
-        variants={containerVariants}
       >
-        <div className="flex">
-          <motion.span
-            variants={firstTextVariants}
-            className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent font-bold"
+        <motion.div
+          className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary shadow-lg shadow-primary/20"
+          variants={iconVariants}
+        >
+          <span className="text-primary-foreground font-bold text-lg">C</span>
+        </motion.div>
+        <div className="flex flex-col">
+          <motion.span 
+            className="font-bold text-foreground"
+            variants={textVariants}
           >
-            Co
+            Coinvoice
           </motion.span>
-          <motion.span
-            variants={secondTextVariants}
-            className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent"
+          <motion.span 
+            className="text-xs text-muted-foreground"
+            variants={textVariants}
           >
-            invoice
+            Enterprise
           </motion.span>
         </div>
-        <span className="text-xs text-blue-600 dark:text-blue-400 leading-tight tracking-wider">ENTERPRISE</span>
       </motion.div>
     )
   }
 
-  // Default variant
   return (
     <motion.div
-      className={`${sizeClasses[size]} flex items-center font-serif`}
+      className={cn("flex items-center gap-2", sizeClasses[size], className)}
+      variants={containerVariants}
       initial="initial"
       animate="animate"
       whileHover="hover"
-      variants={containerVariants}
     >
-      <motion.span
-        variants={firstTextVariants}
-        transition={{ duration: 0.5 }}
-        className="bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent font-bold"
+      <motion.div
+        className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary shadow-lg shadow-primary/20"
+        variants={iconVariants}
       >
-        Co
-      </motion.span>
-      <motion.span
-        variants={secondTextVariants}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-gradient-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent"
+        <span className="text-primary-foreground font-bold text-lg">C</span>
+      </motion.div>
+      <motion.span 
+        className="font-bold text-foreground"
+        variants={textVariants}
       >
-        Invoice
+        oinvoice
       </motion.span>
     </motion.div>
   )
