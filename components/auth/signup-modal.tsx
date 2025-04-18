@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,6 +26,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Wallet } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
 import { FaGithub, FaLinkedin } from "react-icons/fa"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
 interface SignupModalProps {
   trigger?: React.ReactNode
@@ -35,6 +37,22 @@ interface SignupModalProps {
   onOpenChange?: (open: boolean) => void
   onClose?: () => void
 }
+
+const signupSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+  company: z.string().optional(),
+  agreeTerms: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the terms and conditions",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
+
+type SignupFormData = z.infer<typeof signupSchema>
 
 export function SignupModal({ 
   trigger, 
@@ -46,24 +64,23 @@ export function SignupModal({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen)
   const open = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen
   const setOpen = onOpenChange || setUncontrolledOpen
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [company, setCompany] = useState("")
-  const [agreeTerms, setAgreeTerms] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("email")
-  const [walletAddress, setWalletAddress] = useState("")
-  const [isConnecting, setIsConnecting] = useState(false)
 
-  const { signup, error, clearError, isAuthenticated } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+  })
+
   const handleClose = () => {
     setOpen(false)
-    clearError()
     if (onClose) onClose()
   }
 
@@ -74,114 +91,62 @@ export function SignupModal({
     }
   }, [defaultOpen, controlledOpen])
 
-  // Redirect if already authenticated
+  const onSubmit = async (data: SignupFormData) => {
+    setIsSubmitting(true)
+    try {
+      // Here you would typically make an API call to register the user
+      // For now, we'll simulate a successful registration and sign them in
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+
+      toast({
+        title: "Success",
+        description: "Your account has been created successfully.",
+      })
+
+      reset()
+      handleClose()
+      router.push("/dashboard")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Registration failed",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleOAuthSignup = async (provider: "google" | "github" | "linkedin") => {
+    setIsSubmitting(true)
+    try {
+      await signIn(provider, { callbackUrl: "/dashboard" })
+    } catch (error) {
+      console.error("OAuth signup error:", error)
+      toast({
+        title: "Signup failed",
+        description: `Failed to sign up with ${provider}. Please try again.`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Reset form when modal closes
   useEffect(() => {
-    if (isAuthenticated) {
-      handleClose()
-      router.push("/dashboard")
+    if (!open) {
+      reset()
     }
-  }, [isAuthenticated, router, handleClose])
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!name || !email || !password || !confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!agreeTerms) {
-      toast({
-        title: "Error",
-        description: "You must agree to the terms and conditions",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      await signup({ name, email, password, company })
-      handleClose()
-      router.push("/dashboard")
-    } catch (error) {
-      // Error is handled in the auth context
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleEmailSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!name || !email || !password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (password.length < 8) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 8 characters long",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!agreeTerms) {
-      toast({
-        title: "Error",
-        description: "You must agree to the terms and conditions",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      await signup({ name, email, password, company })
-      handleClose()
-      router.push("/dashboard")
-    } catch (error) {
-      // Error is handled in the auth context
-      console.error(error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleWalletConnect = async () => {
-    setIsConnecting(true)
-    try {
-      // Implement wallet connection logic here
-      setWalletAddress("0x1234567890abcdef")
-    } catch (error) {
-      // Error is handled in the auth context
-      console.error(error)
-    } finally {
-      setIsConnecting(false)
-    }
-  }
+  }, [open, reset])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -193,7 +158,7 @@ export function SignupModal({
         )}
       </AnimatePresence>
 
-      <DialogContent className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:max-w-[425px] z-[101] relative">
+      <DialogContent className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:max-w-[425px] z-[101]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -202,10 +167,10 @@ export function SignupModal({
         >
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Create Account
+              Create an Account
             </DialogTitle>
             <DialogDescription>
-              Sign up to get started with Coinvoice
+              Join us to get started with your journey
             </DialogDescription>
           </DialogHeader>
 
@@ -222,20 +187,21 @@ export function SignupModal({
             </TabsList>
 
             <TabsContent value="email" className="mt-4">
-              <form onSubmit={handleEmailSignup} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="name"
-                      type="text"
                       placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      {...register("name")}
                       className="pl-10"
                     />
                   </div>
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -246,11 +212,29 @@ export function SignupModal({
                       id="email"
                       type="email"
                       placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      {...register("email")}
                       className="pl-10"
                     />
                   </div>
+                  {errors.email && (
+                    <p className="text-sm text-red-500">{errors.email.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company (Optional)</Label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="company"
+                      placeholder="Enter your company name"
+                      {...register("company")}
+                      className="pl-10"
+                    />
+                  </div>
+                  {errors.company && (
+                    <p className="text-sm text-red-500">{errors.company.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -261,44 +245,51 @@ export function SignupModal({
                       id="password"
                       type="password"
                       placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      {...register("password")}
                       className="pl-10"
                     />
                   </div>
+                  {errors.password && (
+                    <p className="text-sm text-red-500">{errors.password.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      {...register("confirmPassword")}
+                      className="pl-10"
+                    />
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="terms"
-                    checked={agreeTerms}
-                    onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
+                    {...register("agreeTerms")}
                   />
                   <Label htmlFor="terms" className="text-sm">
                     I agree to the{" "}
-                    <Button
-                      variant="link"
-                      className="px-0"
-                      onClick={() => {
-                        handleClose()
-                        // Open terms modal here
-                      }}
-                    >
+                    <Link href="/terms" className="text-primary hover:underline">
                       Terms of Service
-                    </Button>{" "}
+                    </Link>{" "}
                     and{" "}
-                    <Button
-                      variant="link"
-                      className="px-0"
-                      onClick={() => {
-                        handleClose()
-                        // Open privacy modal here
-                      }}
-                    >
+                    <Link href="/privacy" className="text-primary hover:underline">
                       Privacy Policy
-                    </Button>
+                    </Link>
                   </Label>
                 </div>
+                {errors.agreeTerms && (
+                  <p className="text-sm text-red-500">{errors.agreeTerms.message}</p>
+                )}
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? (
@@ -353,46 +344,10 @@ export function SignupModal({
 
             <TabsContent value="wallet" className="mt-4">
               <div className="space-y-4">
-                {!walletAddress ? (
-                  <Button
-                    className="w-full"
-                    onClick={handleWalletConnect}
-                    disabled={isConnecting}
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
-                      </>
-                    ) : (
-                      <>
-                        <Wallet className="mr-2 h-4 w-4" />
-                        Connect Wallet
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
-                  >
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Connected Wallet
-                    </p>
-                    <p className="font-mono text-sm">
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setWalletAddress("")}
-                    >
-                      Disconnect
-                    </Button>
-                  </motion.div>
-                )}
+                <p className="text-sm text-muted-foreground text-center">
+                  Wallet authentication is currently under development.
+                  Please use email or social login for now.
+                </p>
               </div>
             </TabsContent>
           </Tabs>

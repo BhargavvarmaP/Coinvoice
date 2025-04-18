@@ -80,6 +80,9 @@ export interface Token {
   dueDate: string
   issuer: string
   status: 'active' | 'expired' | 'redeemed'
+  discount?: number  // Discount rate for tokenized invoices (1-2% as per whitepaper)
+  tokenType?: 'invoice' | 'loc' | 'guarantee' | 'ebol'  // Type of tokenized asset
+  riskRating?: 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B' | 'CCC' | 'CC' | 'C' | 'D'  // Risk assessment rating
 }
 
 export interface MarketplaceListing {
@@ -136,10 +139,14 @@ export interface Transaction {
   type: 'send' | 'receive' | 'swap' | 'tokenize' | 'redeem'
   amount: number
   token: string
-  timestamp: string | Date
+  asset?: string // For backward compatibility
+  timestamp?: Date
   status: 'completed' | 'pending' | 'failed'
   counterparty?: string
   description?: string
+  from?: string
+  to?: string
+  txHash?: string
 }
 
 export interface Asset {

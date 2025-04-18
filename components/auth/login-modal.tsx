@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,15 +19,29 @@ import {
   DialogTrigger,
   DialogOverlay,
 } from "@/components/ui/dialog"
-import { Loader2, Mail, Wallet, Github, Linkedin, Lock } from "lucide-react"
+import { Loader2, Mail, Wallet, Github, Linkedin, Lock, ChevronRight } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
-import { ethers } from "ethers"
 import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { ethers } from "ethers"
+import { EthereumProvider, EthereumProviderOptions } from "@walletconnect/ethereum-provider"
+import Image from "next/image"
+
+// Add type definitions for window.ethereum
+declare global {
+  interface Window {
+    ethereum?: {
+      isMetaMask?: boolean
+      isTrust?: boolean
+      isCoinbaseWallet?: boolean
+      request: (args: { method: string; params?: any[] }) => Promise<any>
+    }
+  }
+}
 
 interface LoginModalProps {
   trigger?: React.ReactNode
@@ -52,6 +65,80 @@ const walletLoginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 type WalletLoginFormData = z.infer<typeof walletLoginSchema>
+
+// Add this type definition
+type WalletProvider = "metamask" | "walletconnect" | "trustwallet" | "coinbase"
+
+// WalletConnect configuration
+const WALLET_CONNECT_OPTIONS: EthereumProviderOptions = {
+  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "YOUR_PROJECT_ID",
+  chains: [50], // XDC mainnet
+  optionalChains: [50, 51, 1, 5, 137, 80001], // XDC mainnet, XDC testnet, Ethereum mainnet, Goerli, Polygon, Mumbai
+  showQrModal: true,
+  methods: ["eth_sendTransaction", "eth_signTransaction", "eth_sign", "personal_sign", "eth_signTypedData"],
+  events: ["chainChanged", "accountsChanged"],
+}
+
+// Utility function to get provider based on wallet type
+const getProvider = async (provider: WalletProvider) => {
+  switch (provider) {
+    case "metamask":
+      if (!window.ethereum) {
+        throw new Error("MetaMask is not installed. Please install MetaMask to continue.")
+      }
+      return new ethers.BrowserProvider(window.ethereum)
+
+    case "walletconnect":
+      const wcProvider = await EthereumProvider.init(WALLET_CONNECT_OPTIONS)
+      await wcProvider.enable()
+      return new ethers.BrowserProvider(wcProvider)
+
+    case "trustwallet":
+      if (!window.ethereum?.isTrust) {
+        throw new Error("Trust Wallet is not installed. Please install Trust Wallet to continue.")
+      }
+      return new ethers.BrowserProvider(window.ethereum)
+
+    case "coinbase":
+      if (!window.ethereum?.isCoinbaseWallet) {
+        throw new Error("Coinbase Wallet is not installed. Please install Coinbase Wallet to continue.")
+      }
+      return new ethers.BrowserProvider(window.ethereum)
+
+    default:
+      throw new Error("Unsupported wallet provider")
+  }
+}
+
+// Add this interface for wallet login data
+interface WalletLoginData {
+  address: string
+  signature: string
+  message: string
+  nonce?: string
+  provider?: WalletProvider
+}
+
+// Add this function to handle wallet login
+const loginWithWallet = async (data: WalletLoginData) => {
+  try {
+    const result = await signIn("wallet", {
+      address: data.address,
+      signature: data.signature,
+      message: data.message,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      throw new Error(result.error)
+    }
+
+    return result
+  } catch (error) {
+    console.error("Wallet login error:", error)
+    throw error
+  }
+}
 
 export function LoginModal({ 
   trigger, 
@@ -78,7 +165,6 @@ export function LoginModal({
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { login, loginWithWallet, loginWithOAuth, error, clearError, isAuthenticated } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
 
@@ -102,6 +188,9 @@ export function LoginModal({
     resolver: zodResolver(walletLoginSchema),
   })
 
+  // Add loading states for each provider
+  const [loadingProvider, setLoadingProvider] = useState<WalletProvider | null>(null)
+
   // Update open state when defaultOpen changes
   useEffect(() => {
     if (controlledOpen === undefined) {
@@ -111,31 +200,39 @@ export function LoginModal({
 
   const handleClose = () => {
     setOpen(false)
-    clearError()
     if (onClose) onClose()
   }
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      handleClose()
-      router.push("/dashboard")
-    }
-  }, [isAuthenticated, router, handleClose])
-
   // Handle email login
   const onEmailLogin = async (data: LoginFormData) => {
+    setIsSubmitting(true)
     try {
-      await login({
+      const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        rememberMe: data.rememberMe,
+        redirect: false,
       })
+
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+
+      toast({
+        title: "Success",
+        description: "You have been logged in successfully.",
+      })
+
       resetEmailForm()
       handleClose()
       router.push("/dashboard")
     } catch (error) {
-      // Error is handled by the auth context
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Login failed",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -155,42 +252,87 @@ export function LoginModal({
     }
   }
 
-  // Handle wallet connection
-  const handleWalletConnect = async () => {
+  // Update the handleWalletConnect function
+  const handleWalletConnect = async (provider: WalletProvider) => {
+    setIsSubmitting(true)
+    setWalletError(null)
+
     try {
-      if (!window.ethereum) {
-        throw new Error("Please install MetaMask or another Web3 wallet")
-      }
-
-      // Request account access
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found")
-      }
-
-      const address = accounts[0]
-      const message = `Sign this message to authenticate with Coinvoice\n\nNonce: ${Date.now()}`
+      // 1. Get the appropriate provider
+      const ethProvider = await getProvider(provider)
       
-      // Request signature
-      const signature = await window.ethereum.request({
-        method: "personal_sign",
-        params: [message, address],
-      })
+      // 2. Get signer and address
+      const signer = await ethProvider.getSigner()
+      const address = await signer.getAddress()
 
-      // Submit the form with the wallet data
-      await handleSubmitWallet({
-        address,
-        signature,
-        message,
-      })()
+      // 3. Generate a nonce and create the message
+      const nonce = Date.now().toString()
+      const message = `Welcome to Coinvoice!
+
+By signing this message, you confirm that you are the owner of this wallet and wish to sign in to Coinvoice.
+
+Nonce: ${nonce}
+Wallet: ${address}
+Time: ${new Date().toISOString()}`
+
+      try {
+        // 4. Request signature
+        const signature = await signer.signMessage(message)
+
+        // 5. Verify the signature on the client side first
+        const recoveredAddress = ethers.verifyMessage(message, signature)
+        
+        if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+          throw new Error("Signature verification failed")
+        }
+
+        // 6. Attempt to login with the wallet
+        await loginWithWallet({
+          address,
+          signature,
+          message,
+          nonce,
+          provider // Include provider information
+        })
+
+        // 7. Success - close modal and redirect
+        toast({
+          title: "Successfully connected wallet",
+          description: "Redirecting to dashboard...",
+          variant: "default",
+        })
+        
+        handleClose()
+        router.push("/dashboard")
+
+      } catch (error) {
+        if (error instanceof Error && 'code' in error && error.code === 4001) {
+          // User rejected the signature request
+          throw new Error("Please sign the message to continue")
+        }
+        throw error
+      }
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect wallet"
+      let errorMessage = "Failed to connect wallet"
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      // Handle specific error cases
+      if (errorMessage.includes("user rejected") || errorMessage.includes("rejected")) {
+        errorMessage = "Connection rejected. Please try again."
+      }
+
       setWalletError(errorMessage)
       toast({
         title: "Wallet connection failed",
         description: errorMessage,
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -205,22 +347,47 @@ export function LoginModal({
 
   const handleOAuthLogin = async (provider: "google" | "github" | "linkedin") => {
     setIsSubmitting(true)
-
     try {
-      await loginWithOAuth({ provider })
-      handleClose()
-      router.push("/dashboard")
+      await signIn(provider, { callbackUrl: "/dashboard" })
     } catch (error) {
       console.error("OAuth login error:", error)
       toast({
         title: "Login failed",
-        description: "Failed to login with " + provider + ". Please try again.",
+        description: `Failed to login with ${provider}. Please try again.`,
         variant: "destructive",
       })
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  // Add cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setLoadingProvider(null)
+      setWalletError(null)
+      setIsSubmitting(false)
+    }
+  }, [])
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [walletConnect, setWalletConnect] = useState<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Initialize WalletConnect only on client side
+      const initWalletConnect = async () => {
+        try {
+          const { EthereumProvider } = await import("@walletconnect/ethereum-provider")
+          const provider = await EthereumProvider.init(WALLET_CONNECT_OPTIONS)
+          setWalletConnect(provider)
+        } catch (error) {
+          console.error("Failed to initialize WalletConnect:", error)
+        }
+      }
+      initWalletConnect()
+    }
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -370,47 +537,103 @@ export function LoginModal({
             </TabsContent>
 
             <TabsContent value="wallet" className="mt-4">
-              <form onSubmit={handleSubmitWallet(onWalletLogin)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="wallet-address">Wallet Address</Label>
-                  <div className="relative">
-                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="wallet-address"
-                      placeholder="Enter your wallet address"
-                      {...registerWallet("address")}
-                      className="pl-10"
-                    />
-                  </div>
-                  {walletErrors.address && (
-                    <p className="text-sm text-red-500">{walletErrors.address.message}</p>
-                  )}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleWalletConnect("metamask")}
+                    disabled={isSubmitting || loadingProvider === "metamask"}
+                  >
+                    {loadingProvider === "metamask" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Image
+                        src="/wallets/metamask.svg"
+                        alt="MetaMask"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                    )}
+                    MetaMask
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleWalletConnect("walletconnect")}
+                    disabled={isSubmitting || loadingProvider === "walletconnect"}
+                  >
+                    {loadingProvider === "walletconnect" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Image
+                        src="/wallets/walletconnect.svg"
+                        alt="WalletConnect"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                    )}
+                    WalletConnect
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleWalletConnect("trustwallet")}
+                    disabled={isSubmitting || loadingProvider === "trustwallet"}
+                  >
+                    {loadingProvider === "trustwallet" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Image
+                        src="/wallets/trustwallet.svg"
+                        alt="Trust Wallet"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                    )}
+                    Trust Wallet
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleWalletConnect("coinbase")}
+                    disabled={isSubmitting || loadingProvider === "coinbase"}
+                  >
+                    {loadingProvider === "coinbase" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Image
+                        src="/wallets/coinbase.svg"
+                        alt="Coinbase Wallet"
+                        width={20}
+                        height={20}
+                        className="mr-2"
+                      />
+                    )}
+                    Coinbase
+                  </Button>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleWalletConnect}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Wallet className="mr-2 h-4 w-4" />
-                      Connect Wallet
-                    </>
-                  )}
-                </Button>
-
                 {walletError && (
-                  <p className="text-sm text-red-500">{walletError}</p>
+                  <div className="text-sm text-red-500 text-center">
+                    {walletError}
+                  </div>
                 )}
-              </form>
+
+                <div className="text-sm text-muted-foreground text-center">
+                  By connecting your wallet, you agree to our{" "}
+                  <Link href="/terms" className="text-primary hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
 

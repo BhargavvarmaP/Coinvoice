@@ -38,6 +38,7 @@ import {
   Image,
   Globe,
   Upload,
+  Copy,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
@@ -1133,5 +1134,20 @@ export function ContentManagement() {
                       onClick={() => {
                         navigator.clipboard.writeText(selectedMedia.url)
                         toast({
-                          title: "URL Copied",\
-                          description: "File URL
+                          title: "URL Copied",
+                          description: "File URL has been copied to clipboard"
+                        })
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

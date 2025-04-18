@@ -1,9 +1,10 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { NotificationType, WalletBalance, Token } from "./types"
+import { type Transaction } from "./types"
 
 // Define stakeholder types including regulatory
-export type StakeholderType = "originator" | "investor" | "funder" | "regulatory"
+export type StakeholderType = 'buyer' | 'seller' | 'originator' | 'investor' | 'funder' | 'regulatory' | "individual" | "business" | "merchant" | "admin"
 
 // Define user profile type
 export interface UserProfile {
@@ -30,22 +31,6 @@ export interface Asset {
   value: number
   change24h: number
   icon: string
-}
-
-// Define transaction type
-export interface Transaction {
-  id: string
-  type: "send" | "receive" | "swap" | "stake" | "unstake" | "claim" | "tokenize"
-  amount: number
-  token?: string
-  asset?: string
-  date?: Date
-  timestamp?: Date
-  status: "completed" | "pending" | "failed"
-  from?: string
-  to?: string
-  counterparty?: string
-  txHash?: string
 }
 
 // Define invoice type
@@ -134,8 +119,6 @@ interface AppState {
   addInvoice: (invoice: Invoice) => void
   updateInvoice: (id: string, updates: Partial<Invoice>) => void
   deleteInvoice: (id: string) => void
-  walletBalance: WalletBalance | null
-  setWalletBalance: (balance: WalletBalance | null) => void
 }
 
 // Generate mock data
@@ -512,8 +495,6 @@ export const useAppStore = create<AppState>()(
             ]
           }))
         },
-        walletBalance: null,
-        setWalletBalance: (balance) => set({ walletBalance: balance }),
 
         // Actions
         setStakeholderType: (type) => set({ stakeholderType: type }),

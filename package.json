@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/core": "^0.38.0",
+    "@auth/prisma-adapter": "^2.8.0",
     "@emotion/is-prop-valid": "latest",
     "@faker-js/faker": "latest",
     "@hookform/resolvers": "^3.9.1",
@@ -45,6 +47,8 @@
     "@testing-library/dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
+    "@walletconnect/client": "^1.8.0",
+    "@walletconnect/ethereum-provider": "^2.20.0",
     "autoprefixer": "^10.4.20",
     "chart.js": "^4.4.8",
     "class-variance-authority": "^0.7.1",
@@ -62,7 +66,7 @@
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
-    "next-themes": "latest",
+    "next-auth": "^4.24.11",
     "react": "^19",
     "react-chartjs-2": "^5.3.0",
     "react-day-picker": "latest",
@@ -82,10 +86,13 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@prisma/client": "^6.6.0",
     "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "next-themes": "^0.4.6",
     "postcss": "^8",
+    "prisma": "^6.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }

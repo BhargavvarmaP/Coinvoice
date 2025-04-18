@@ -4,8 +4,9 @@ import type { ReactNode } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { AppSidebar } from "@/components/sidebar"
+import { EnhancedSidebar } from "@/components/enhanced-sidebar"
 import { cn } from "@/lib/utils"
+import { useAppStore } from "@/lib/store"
 
 interface EnhancedAppLayoutProps {
   children: ReactNode
@@ -14,7 +15,13 @@ interface EnhancedAppLayoutProps {
 export function EnhancedAppLayout({ children }: EnhancedAppLayoutProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const { sidebarCollapsed } = useAppStore()
+  const { sidebarCollapsed, isWeb3Connected, web3Loading, web3Error, connectWeb3 } = useAppStore()
+
+  useEffect(() => {
+    if (!isWeb3Connected && !web3Loading && !web3Error) {
+      connectWeb3()
+    }
+  }, [isWeb3Connected, web3Loading, web3Error, connectWeb3])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,7 +35,7 @@ export function EnhancedAppLayout({ children }: EnhancedAppLayoutProps) {
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
       {/* Sidebar */}
-      <AppSidebar />
+      <EnhancedSidebar />
       
       {/* Main Content */}
       <div className={cn(

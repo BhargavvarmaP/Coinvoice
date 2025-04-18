@@ -42,7 +42,7 @@ export function SidebarProvider({ children, defaultOpen = true }: SidebarProvide
 
 // Sidebar component
 const sidebarVariants = cva(
-  "h-screen flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out",
+  "fixed top-0 bottom-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out",
   {
     variants: {
       variant: {
@@ -84,7 +84,7 @@ export function SidebarHeader({ className, ...props }: SidebarHeaderProps) {
 interface SidebarContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function SidebarContent({ className, ...props }: SidebarContentProps) {
-  return <div className={cn("flex-1 overflow-auto py-2", className)} {...props} />
+  return <div className={cn("flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-sidebar-border scrollbar-track-transparent", className)} {...props} />
 }
 
 // Sidebar Footer
@@ -146,7 +146,11 @@ export function SidebarInset({ className, ...props }: SidebarInsetProps) {
 
   return (
     <div
-      className={cn("flex-1 transition-all duration-300 ease-in-out", open ? "ml-64" : "ml-20", className)}
+      className={cn(
+        "min-h-screen transition-all duration-300 ease-in-out",
+        open ? "ml-64" : "ml-20",
+        className
+      )}
       {...props}
     />
   )
@@ -185,11 +189,9 @@ export function SidebarMenuButton({
   const content = (
     <Comp
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative overflow-hidden",
-        isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-        className,
+        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative overflow-hidden hover:bg-sidebar-accent/50",
+        isActive && "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full before:bg-primary",
+        className
       )}
       {...props}
     />
@@ -198,9 +200,11 @@ export function SidebarMenuButton({
   if (!open && tooltip) {
     return (
       <TooltipProvider>
-        <Tooltip delayDuration={300}>
+        <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right">{tooltip}</TooltipContent>
+          <TooltipContent side="right" sideOffset={10}>
+            {tooltip}
+          </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     )

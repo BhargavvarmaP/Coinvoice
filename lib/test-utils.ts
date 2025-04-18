@@ -1,52 +1,76 @@
 import type React from "react"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, RenderOptions } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { AuthProvider } from "@/contexts/auth-context"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "next-themes"
 import { Toaster } from "@/components/ui/toaster"
 import { testData } from "@/lib/mock-data"
 import { expect, jest } from "@jest/globals"
+import type { ThemeProviderProps } from "next-themes"
+
+interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
+  themeProps?: Partial<ThemeProviderProps>
+}
 
 // Custom render function that includes providers
-export function renderWithProviders(ui: React.ReactElement) {
-  return render(
-    <ThemeProvider defaultTheme="light" storageKey="coinvoice-theme">
-      <AuthProvider>
-        {ui}
-        <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
-  )
+export function renderWithProviders(
+  ui: React.ReactElement,
+  options: CustomRenderOptions = {}
+) {
+  const { themeProps, ...renderOptions } = options;
+  
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange {...themeProps}>
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
+    );
+  }
+
+  return {
+    user: userEvent.setup(),
+    ...render(ui, { wrapper: Wrapper, ...renderOptions }),
+  };
 }
 
 // Helper to simulate login
 export async function loginUser(email = "admin@example.com", password = "admin123") {
   renderWithProviders(
     <div>
-      <input data-testid="email-input" />
-      <input data-testid="password-input" />
-      <button data-testid="login-button">Login</button>
-    </div>,
-  )
+      <input data-testid="email-input" type="email" defaultValue={email} />
+      <input data-testid="password-input" type="password" defaultValue={password} />
+      <button data-testid="login-button" type="button">Login</button>
+    </div>
+  );
 
-  await userEvent.type(screen.getByTestId("email-input"), email)
-  await userEvent.type(screen.getByTestId("password-input"), password)
-  await userEvent.click(screen.getByTestId("login-button"))
+  await userEvent.type(screen.getByTestId("email-input"), email);
+  await userEvent.type(screen.getByTestId("password-input"), password);
+  await userEvent.click(screen.getByTestId("login-button"));
 
   return waitFor(() => {
-    expect(localStorage.getItem("coinvoice_user")).not.toBeNull()
-  })
+    expect(localStorage.getItem("coinvoice_user")).not.toBeNull();
+  });
 }
 
 // Helper to simulate wallet connection
 export async function mockWalletConnection(address = "0x1234567890abcdef1234567890abcdef12345678") {
   // Mock ethereum provider
-  global.ethereum = {
+  interface EthereumProvider {
+    request: jest.Mock;
+    on: jest.Mock;
+    removeListener: jest.Mock;
+    isMetaMask: boolean;
+  }
+
+  (global as any).ethereum = {
     request: jest.fn().mockResolvedValue([address]),
     on: jest.fn(),
     removeListener: jest.fn(),
     isMetaMask: true,
-  }
+  } as EthereumProvider;
 
   // Mock ethers
   jest.mock("ethers", () => ({
@@ -57,9 +81,9 @@ export async function mockWalletConnection(address = "0x1234567890abcdef12345678
       send: jest.fn().mockResolvedValue([address]),
     })),
     verifyMessage: jest.fn().mockReturnValue(address),
-  }))
+  }));
 
-  return address
+  return address;
 }
 
 // Helper to generate test data
@@ -67,7 +91,7 @@ export const generateTestData = {
   ...testData,
 
   // Generate test cases
-  generateTestCase: (component: string, overrides = {}) => {
+  generateTestCase: (component: string, overrides: Record<string, unknown> = {}) => {
     return {
       id: `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: `Test ${component} functionality`,
@@ -77,11 +101,11 @@ export const generateTestData = {
       expectedResult: "Component should behave as expected",
       status: "pending",
       ...overrides,
-    }
+    };
   },
 
   // Generate test results
-  generateTestResult: (testId: string, passed = true, overrides = {}) => {
+  generateTestResult: (testId: string, passed = true, overrides: Record<string, unknown> = {}) => {
     return {
       testId,
       passed,
@@ -91,7 +115,7 @@ export const generateTestData = {
       ...overrides,
     }
   },
-}
+};
 
 // Export testing utilities
 export const testUtils = {

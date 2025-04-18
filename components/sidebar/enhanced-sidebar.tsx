@@ -56,6 +56,20 @@ import {
   FileSignature,
   ShoppingCart,
   DollarSign,
+  ListOrdered,
+  Clock,
+  Loader2,
+  CheckCircle,
+  Files,
+  FileEdit,
+  Send,
+  AlertCircle,
+  LineChart,
+  TrendingUp,
+  FileBarChart,
+  Network,
+  Coins,
+  ArrowLeftRight,
 } from "lucide-react"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import { buttonVariants } from "@/components/ui/button"
@@ -152,90 +166,164 @@ const navItemsByType: Record<'buyer' | 'seller', NavItem[][]> = {
   seller: [
     [
       {
-        name: "Dashboard",
-        href: "/dashboard",
+        name: 'Dashboard',
+        href: '/dashboard',
         icon: <LayoutDashboard className="h-4 w-4" />,
-      },
+      }
     ],
     [
       {
-        name: "Financial Services",
-        href: "/financial-services",
-        icon: <Briefcase className="h-4 w-4" />,
+        name: 'Orders',
+        href: '/orders',
+        icon: <ShoppingCart className="h-4 w-4" />,
         children: [
           {
-            name: "Letters of Credit",
-            href: "/financial-services/letters-of-credit",
+            name: 'All Orders',
+            href: '/orders',
+            icon: <ListOrdered className="h-4 w-4" />,
+          },
+          {
+            name: 'Pending',
+            href: '/orders/pending',
+            icon: <Clock className="h-4 w-4" />,
+            badge: '3',
+          },
+          {
+            name: 'Processing',
+            href: '/orders/processing',
+            icon: <Loader2 className="h-4 w-4" />,
+          },
+          {
+            name: 'Completed',
+            href: '/orders/completed',
+            icon: <CheckCircle className="h-4 w-4" />,
+          }
+        ]
+      }
+    ],
+    [
+      {
+        name: 'Invoices',
+        href: '/invoices',
+        icon: <FileText className="h-4 w-4" />,
+        children: [
+          {
+            name: 'All Invoices',
+            href: '/invoices',
+            icon: <Files className="h-4 w-4" />,
+          },
+          {
+            name: 'Draft',
+            href: '/invoices/draft',
+            icon: <FileEdit className="h-4 w-4" />,
+          },
+          {
+            name: 'Sent',
+            href: '/invoices/sent',
+            icon: <Send className="h-4 w-4" />,
+          },
+          {
+            name: 'Paid',
+            href: '/invoices/paid',
             icon: <FileCheck className="h-4 w-4" />,
           },
           {
-            name: "Guarantees",
-            href: "/financial-services/guarantees",
-            icon: <ShieldCheck className="h-4 w-4" />,
-          },
-          {
-            name: "Electronic BoL",
-            href: "/financial-services/electronic-bol",
-            icon: <FileText className="h-4 w-4" />,
-          },
-          {
-            name: "Marketplace Payments",
-            href: "/financial-services/marketplace-payments",
-            icon: <CreditCard className="h-4 w-4" />,
-          },
-        ],
-      },
+            name: 'Overdue',
+            href: '/invoices/overdue',
+            icon: <AlertCircle className="h-4 w-4" />,
+            badge: '2',
+          }
+        ]
+      }
     ],
     [
       {
-        name: "Invoices",
-        href: "/invoices",
-        icon: <Receipt className="h-4 w-4" />,
-        badge: "3",
-      },
-    ],
-    [
-      {
-        name: "Wallet",
-        href: "/wallet",
+        name: 'Financial Services',
+        href: '/financial-services',
         icon: <Wallet className="h-4 w-4" />,
         children: [
           {
-            name: "Overview",
-            href: "/wallet/overview",
-            icon: <LayoutDashboard className="h-4 w-4" />,
+            name: 'Factoring',
+            href: '/financial-services/factoring',
+            icon: <ArrowLeftRight className="h-4 w-4" />,
           },
           {
-            name: "Send",
-            href: "/wallet/send",
-            icon: <ArrowUpRight className="h-4 w-4" />,
+            name: 'Trade Finance',
+            href: '/financial-services/trade-finance',
+            icon: <Building2 className="h-4 w-4" />,
           },
           {
-            name: "Receive",
-            href: "/wallet/receive",
-            icon: <ArrowDownLeft className="h-4 w-4" />,
-          },
-          {
-            name: "Transactions",
-            href: "/wallet/transactions",
-            icon: <History className="h-4 w-4" />,
-          },
-          {
-            name: "Settings",
-            href: "/wallet/settings",
-            icon: <Settings className="h-4 w-4" />,
-          },
-        ],
-      },
+            name: 'Supply Chain Finance',
+            href: '/financial-services/supply-chain-finance',
+            icon: <Network className="h-4 w-4" />,
+          }
+        ]
+      }
     ],
     [
       {
-        name: "Analytics",
-        href: "/analytics",
-        icon: <BarChart3 className="h-4 w-4" />,
-      },
+        name: 'Wallet',
+        href: '/wallet',
+        icon: <Wallet className="h-4 w-4" />,
+        children: [
+          {
+            name: 'Overview',
+            href: '/wallet',
+            icon: <LayoutDashboard className="h-4 w-4" />,
+          },
+          {
+            name: 'Assets',
+            href: '/wallet/assets',
+            icon: <Coins className="h-4 w-4" />,
+          },
+          {
+            name: 'Transactions',
+            href: '/wallet/transactions',
+            icon: <History className="h-4 w-4" />,
+          },
+          {
+            name: 'Withdraw',
+            href: '/wallet/withdraw',
+            icon: <ArrowDownLeft className="h-4 w-4" />,
+          },
+          {
+            name: 'Deposit',
+            href: '/wallet/deposit',
+            icon: <ArrowUpRight className="h-4 w-4" />,
+          }
+        ]
+      }
     ],
-  ],
+    [
+      {
+        name: 'Analytics',
+        href: '/analytics',
+        icon: <LineChart className="h-4 w-4" />,
+        children: [
+          {
+            name: 'Overview',
+            href: '/analytics',
+            icon: <LayoutDashboard className="h-4 w-4" />,
+          },
+          {
+            name: 'Sales',
+            href: '/analytics/sales',
+            icon: <TrendingUp className="h-4 w-4" />,
+          },
+          {
+            name: 'Customers',
+            href: '/analytics/customers',
+            icon: <Users className="h-4 w-4" />,
+          },
+          {
+            name: 'Reports',
+            href: '/analytics/reports',
+            icon: <FileBarChart className="h-4 w-4" />,
+          }
+        ]
+      }
+    ]
+  ]
 } as const;
 
 interface NavItem {
