@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -42,13 +41,23 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
+  id                String    @id @default(cuid())
+  name              String?
+  email             String?   @unique
+  emailVerified     DateTime?
+  image             String?
+  role              String    @default("user")
+  address           String?   @unique
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  accounts          Account[]
+  sessions          Session[]
+  wallets           Wallet[]
+  transactions      Transaction[]
+  refreshTokens     RefreshToken[]
+  invoices          Invoice[]
 }
 
 model VerificationToken {
@@ -57,4 +66,72 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Wallet {
+  id               String        @id @default(cuid())
+  address          String        @unique
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  fromTransactions Transaction[] @relation("FromTransactions")
+  toTransactions   Transaction[] @relation("ToTransactions")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  isDefault        Boolean       @default(false)
+  name             String?
+  type             String        @default("external") // external, internal
+  chainId          Int?          // For multi-chain support
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  amount       Float
+  currency     String
+  status       String
+  fromWalletId String
+  toWalletId   String
+  fromWallet   Wallet   @relation("FromTransactions", fields: [fromWalletId], references: [id])
+  toWallet     Wallet   @relation("ToTransactions", fields: [toWalletId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  number        String    @unique
+  clientName    String
+  clientEmail   String
+  clientAddress String
+  amount        Float
+  currency      String
+  status        String    @default("draft")
+  dueDate       DateTime
+  description   String?
+  notes         String?
+  terms         String?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  items         InvoiceItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Float
+  price       Float
+  tax         Float?
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  createdAt   DateTime @default(now())
 }

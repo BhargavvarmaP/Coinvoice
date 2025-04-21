@@ -40,19 +40,6 @@ export function GradientText({
     "rainbow": "from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 dark:from-red-400 dark:via-yellow-400 dark:via-green-400 dark:via-blue-400 dark:to-purple-400"
   }
 
-  // Animation properties for the gradient
-  const animationProps = animate
-    ? {
-        backgroundSize: ["100% 100%", "200% 100%", "100% 100%"],
-        backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"],
-        transition: {
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear",
-        },
-      }
-    : {}
-
   // Create the component based on the "as" prop
   const Component = motion[as] as any
 
@@ -63,7 +50,11 @@ export function GradientText({
         gradients[gradient],
         className
       )}
-      {...animationProps}
+      style={animate ? {
+        backgroundSize: "200% 100%",
+        backgroundPosition: "0% 0%",
+        animation: "gradient 8s linear infinite",
+      } : undefined}
       {...motionProps}
     >
       {children}

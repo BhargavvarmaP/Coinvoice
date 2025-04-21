@@ -1,7 +1,9 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { NotificationType, WalletBalance, Token } from "./types"
-import { type Transaction } from "./types"
+import { ethers } from "ethers"
+import { EthereumProvider } from "@walletconnect/ethereum-provider"
+import { Transaction, Token, WalletBalance } from "./types"
+import { Notification, NotificationType, MarketplaceListing } from "./types"
 
 // Define stakeholder types including regulatory
 export type StakeholderType = 'buyer' | 'seller' | 'originator' | 'investor' | 'funder' | 'regulatory' | "individual" | "business" | "merchant" | "admin"
@@ -83,17 +85,24 @@ export interface Notification {
 }
 
 // Define app state
-interface AppState {
+export interface AppState {
   // User and authentication
   isAuthenticated: boolean
   userProfile: UserProfile | null
-  notifications: NotificationType[]
+  notifications: Notification[]
   unreadNotificationsCount: number
 
   // UI state
   stakeholderType: StakeholderType
   sidebarCollapsed: boolean
   isDarkMode: boolean
+
+  // Web3 connection state
+  isWeb3Connected: boolean
+  web3Loading: boolean
+  web3Error: string | null
+  connectWeb3: () => Promise<void>
+  disconnectWeb3: () => void
 
   // Wallet state
   assets: Asset[]
@@ -157,54 +166,37 @@ const generateMockData = () => {
   // Mock transactions
   const transactions: Transaction[] = [
     {
-      id: "tx1",
+      id: "1",
       type: "tokenize",
-      asset: "CVT",
-      amount: 500,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      asset: "Invoice #123",
+      amount: 1000,
+      token: "INV-123",
+      timestamp: new Date(),
       status: "completed",
-      counterparty: "Acme Inc.",
-      txHash: "0x1a2b3c4d5e6f7g8h9i0j",
+      counterparty: "Acme Corp",
+      txHash: "0x123...",
     },
     {
-      id: "tx2",
+      id: "2",
       type: "receive",
       asset: "USDC",
-      amount: 2500,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      amount: 500,
+      token: "USDC",
+      timestamp: new Date(),
       status: "completed",
-      counterparty: "Global Supplies Ltd.",
-      txHash: "0x2b3c4d5e6f7g8h9i0j1k",
+      counterparty: "0x456...",
+      txHash: "0x456...",
     },
     {
-      id: "tx3",
+      id: "3",
       type: "send",
-      asset: "ETH",
-      amount: 0.5,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+      asset: "USDC",
+      amount: 200,
+      token: "USDC",
+      timestamp: new Date(),
       status: "completed",
-      counterparty: "0x7a8b9c0d1e2f3g4h5i6j",
-      txHash: "0x3c4d5e6f7g8h9i0j1k2l",
-    },
-    {
-      id: "tx4",
-      type: "swap",
-      token: "ETH",
-      amount: 0.25,
-      date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-      status: "completed",
-      from: "0x4d5e6f7g8h9i0j1k2l3m",
-      to: "USDC",
-    },
-    {
-      id: "tx5",
-      type: "tokenize",
-      asset: "CVT",
-      amount: 750,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4), // 4 days ago
-      status: "completed",
-      counterparty: "MegaSoft LLC",
-      txHash: "0x5e6f7g8h9i0j1k2l3m4n",
+      counterparty: "0x789...",
+      txHash: "0x789...",
     },
   ]
 
@@ -468,9 +460,36 @@ export const useAppStore = create<AppState>()(
           // Simulate fetching wallet balances
           set((state) => ({
             walletBalances: [
-              { token: "CVT", balance: 1250.75, value: 1250.75, change: 2.5 },
-              { token: "USDC", balance: 5000, value: 5000, change: 0.1 },
-              { token: "ETH", balance: 1.25, value: 3750, change: -1.2 }
+              { 
+                token: "CVT", 
+                balance: 1250.75, 
+                value: 1250.75, 
+                change: 2.5,
+                total: 1250.75,
+                available: 1000.75,
+                locked: 250,
+                walletAddress: state.userProfile?.walletAddress || ""
+              },
+              { 
+                token: "USDC", 
+                balance: 5000, 
+                value: 5000, 
+                change: 0.1,
+                total: 5000,
+                available: 4500,
+                locked: 500,
+                walletAddress: state.userProfile?.walletAddress || ""
+              },
+              { 
+                token: "ETH", 
+                balance: 1.25, 
+                value: 3750, 
+                change: -1.2,
+                total: 1.25,
+                available: 1,
+                locked: 0.25,
+                walletAddress: state.userProfile?.walletAddress || ""
+              }
             ]
           }))
         },
@@ -480,7 +499,10 @@ export const useAppStore = create<AppState>()(
             tokens: [
               {
                 id: "token1",
+                symbol: "INV-001",
+                name: "Invoice Token #001",
                 amount: 5000,
+                value: 4825,
                 dueDate: "2025-05-15",
                 price: 4825,
                 yield: "3.5%",
@@ -557,6 +579,91 @@ export const useAppStore = create<AppState>()(
           set((state) => ({
             invoices: state.invoices.filter((invoice) => invoice.id !== id),
           })),
+
+        // Web3 connection state and methods
+        isWeb3Connected: false,
+        web3Loading: false,
+        web3Error: null,
+
+        connectWeb3: async () => {
+          set({ web3Loading: true, web3Error: null });
+          try {
+            // Check if window.ethereum is available
+            if (typeof window !== 'undefined' && window.ethereum) {
+              const provider = window.ethereum as ethers.providers.ExternalProvider & {
+                on: (event: string, callback: (accounts: string[]) => void) => void;
+                removeAllListeners: (event: string) => void;
+              };
+              
+              // Request account access
+              const accounts = await provider.request({ method: 'eth_requestAccounts' });
+              
+              if (accounts && accounts.length > 0) {
+                const address = accounts[0];
+                
+                // Update user profile with wallet address if needed
+                set((state) => ({
+                  isWeb3Connected: true,
+                  web3Loading: false,
+                  userProfile: state.userProfile ? {
+                    ...state.userProfile,
+                    walletAddress: address
+                  } : state.userProfile
+                }));
+                
+                // Setup event listeners for account changes
+                provider.on('accountsChanged', (newAccounts: string[]) => {
+                  if (newAccounts.length === 0) {
+                    // User disconnected their wallet
+                    get().disconnectWeb3();
+                  } else {
+                    // User switched accounts
+                    const newAddress = newAccounts[0];
+                    set((state) => ({
+                      userProfile: state.userProfile ? {
+                        ...state.userProfile,
+                        walletAddress: newAddress
+                      } : state.userProfile
+                    }));
+                  }
+                });
+                
+                // Setup event listeners for chain changes
+                provider.on('chainChanged', () => {
+                  // Reload the page when the chain changes
+                  window.location.reload();
+                });
+                
+                return;
+              }
+            }
+            throw new Error('No Ethereum provider detected. Please install MetaMask or another wallet.');
+          } catch (error) {
+            console.error('Web3 connection error:', error);
+            set({ 
+              isWeb3Connected: false, 
+              web3Loading: false, 
+              web3Error: error instanceof Error ? error.message : 'Failed to connect wallet'
+            });
+          }
+        },
+
+        disconnectWeb3: () => {
+          // Remove event listeners if needed
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const provider = window.ethereum as ethers.providers.ExternalProvider & {
+              removeAllListeners: (event: string) => void;
+            };
+            provider.removeAllListeners('accountsChanged');
+            provider.removeAllListeners('chainChanged');
+          }
+          
+          set({ 
+            isWeb3Connected: false,
+            web3Loading: false,
+            web3Error: null
+          });
+        },
       }
     },
     {

@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { PlayIcon, CheckCircle, XCircle, Clock, Filter, RefreshCw } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { generateTestData } from "@/lib/test-utils"
-import { useToast } from "@/components/ui/use-toast"
-import { Play, CheckCircle, XCircle, Clock, FileText, RefreshCw } from "lucide-react"
+import { TestList } from "./test-list"
+import { TestDetails } from "./test-details"
 
-type TestStatus = "pending" | "running" | "passed" | "failed"
+// Define TestStatus as an enum-like type
+export type TestStatus = "pending" | "running" | "passed" | "failed"
 
 interface TestCase {
   id: string
@@ -29,308 +30,239 @@ interface TestCase {
 }
 
 export function TestRunner() {
-  const [tests, setTests] = useState<TestCase[]>([])
+  const [tests, setTests] = useState<TestCase[]>([
+    {
+      id: "test-1",
+      name: "Invoice Creation",
+      description: "Test the creation of a new invoice",
+      component: "InvoiceForm",
+      steps: [
+        "Navigate to the invoice creation page",
+        "Fill in all required fields",
+        "Click the 'Create Invoice' button",
+        "Verify the invoice is created successfully"
+      ],
+      expectedResult: "Invoice should be created and appear in the invoice list",
+      status: "pending" as TestStatus
+    },
+    {
+      id: "test-2",
+      name: "Payment Processing",
+      description: "Test the payment processing workflow",
+      component: "PaymentProcessor",
+      steps: [
+        "Select an unpaid invoice",
+        "Click 'Pay Now' button",
+        "Connect wallet",
+        "Confirm transaction",
+        "Wait for blockchain confirmation"
+      ],
+      expectedResult: "Payment should be processed and invoice status should change to 'Paid'",
+      status: "passed" as TestStatus
+    },
+    {
+      id: "test-3",
+      name: "User Authentication",
+      description: "Test user login functionality",
+      component: "LoginForm",
+      steps: [
+        "Navigate to login page",
+        "Enter valid credentials",
+        "Click 'Login' button"
+      ],
+      expectedResult: "User should be authenticated and redirected to dashboard",
+      status: "failed" as TestStatus,
+      error: "Authentication failed: Invalid credentials"
+    },
+    {
+      id: "test-4",
+      name: "Dark Mode Toggle",
+      description: "Test the dark mode toggle functionality",
+      component: "ThemeToggle",
+      steps: [
+        "Navigate to any page",
+        "Click the theme toggle button"
+      ],
+      expectedResult: "Theme should switch between light and dark mode",
+      status: "passed" as TestStatus
+    },
+    {
+      id: "test-5",
+      name: "Invoice Export",
+      description: "Test exporting invoices to PDF",
+      component: "InvoiceExport",
+      steps: [
+        "Select an invoice",
+        "Click 'Export to PDF' button",
+        "Wait for PDF generation"
+      ],
+      expectedResult: "PDF should be generated and downloaded",
+      status: "pending" as TestStatus
+    }
+  ])
+
   const [selectedTests, setSelectedTests] = useState<string[]>([])
-  const [isRunning, setIsRunning] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [selectedTestDetails, setSelectedTestDetails] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("all")
 
-  const { toast } = useToast()
-
-  // Generate some test cases on mount
-  useEffect(() => {
-    const testCases: TestCase[] = [
-      generateTestData.generateTestCase("LoginForm", {
-        name: "Login form validation",
-        description: "Verify that the login form validates user input correctly",
-        steps: [
-          "Render the login form",
-          "Submit the form without entering any data",
-          "Verify that validation errors are displayed",
-          "Enter valid email and password",
-          "Submit the form",
-          "Verify that the form submits successfully",
-        ],
-        expectedResult: "Form should display validation errors and submit successfully with valid data",
-      }),
-      generateTestData.generateTestCase("SignupForm", {
-        name: "Signup form validation",
-        description: "Verify that the signup form validates user input correctly",
-        steps: [
-          "Render the signup form",
-          "Submit the form without entering any data",
-          "Verify that validation errors are displayed",
-          "Enter valid name, email, and password",
-          "Submit the form",
-          "Verify that the form submits successfully",
-        ],
-        expectedResult: "Form should display validation errors and submit successfully with valid data",
-      }),
-      generateTestData.generateTestCase("WalletConnection", {
-        name: "Wallet connection flow",
-        description: "Verify that users can connect their wallet and sign in",
-        steps: [
-          "Render the wallet login component",
-          "Click the connect wallet button",
-          "Mock the wallet connection",
-          "Verify that the wallet address is displayed",
-          "Click the sign in button",
-          "Verify that the user is authenticated",
-        ],
-        expectedResult: "User should be able to connect their wallet and sign in successfully",
-      }),
-      generateTestData.generateTestCase("InvoiceCreation", {
-        name: "Invoice creation flow",
-        description: "Verify that users can create a new invoice",
-        steps: [
-          "Render the invoice creation form",
-          "Fill in all required fields",
-          "Submit the form",
-          "Verify that the invoice is created successfully",
-        ],
-        expectedResult: "Invoice should be created and added to the user's invoices",
-      }),
-      generateTestData.generateTestCase("TokenListing", {
-        name: "Token listing flow",
-        description: "Verify that users can list a token on the marketplace",
-        steps: [
-          "Render the token listing form",
-          "Select an invoice to tokenize",
-          "Fill in the listing details",
-          "Submit the form",
-          "Verify that the token is listed on the marketplace",
-        ],
-        expectedResult: "Token should be listed on the marketplace with the correct details",
-      }),
-    ]
-
-    setTests(testCases)
+  const handleSelectTest = useCallback((testId: string) => {
+    setSelectedTests(prev => 
+      prev.includes(testId) 
+        ? prev.filter(id => id !== testId)
+        : [...prev, testId]
+    )
   }, [])
 
-  const handleSelectTest = (testId: string) => {
-    setSelectedTests((prev) => (prev.includes(testId) ? prev.filter((id) => id !== testId) : [...prev, testId]))
-  }
-
-  const handleSelectAll = () => {
-    if (selectedTests.length === filteredTests.length) {
-      setSelectedTests([])
-    } else {
-      setSelectedTests(filteredTests.map((test) => test.id))
-    }
-  }
-
-  const handleRunTests = async () => {
-    if (selectedTests.length === 0) {
-      toast({
-        title: "No tests selected",
-        description: "Please select at least one test to run",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsRunning(true)
-    setProgress(0)
-
-    // Reset status of selected tests
-    setTests((prev) =>
-      prev.map((test) => (selectedTests.includes(test.id) ? { ...test, status: "running" as TestStatus } : test)),
-    )
-
-    // Run tests sequentially
-    for (let i = 0; i < selectedTests.length; i++) {
-      const testId = selectedTests[i]
-      const progress = Math.round((i / selectedTests.length) * 100)
-      setProgress(progress)
-
-      // Find the test
-      const test = tests.find((t) => t.id === testId)
-      if (!test) continue
-
-      // Simulate test running
-      await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 2000))
-
-      // Update test status
-      const passed = Math.random() > 0.3 // 70% chance of passing
-      const duration = Math.round(500 + Math.random() * 1500)
-
-      setTests((prev) =>
-        prev.map((t) =>
-          t.id === testId
-            ? {
-                ...t,
-                status: passed ? "passed" : "failed",
-                lastRun: new Date(),
-                duration,
-                error: passed ? undefined : "Test assertion failed: Expected element to be visible",
-              }
-            : t,
-        ),
-      )
-    }
-
-    setProgress(100)
-    setIsRunning(false)
-
-    toast({
-      title: "Tests completed",
-      description: `Ran ${selectedTests.length} tests`,
+  const handleRunTests = useCallback(() => {
+    const testsToRun = selectedTests.length > 0 
+      ? selectedTests 
+      : tests.map(test => test.id)
+    
+    // Set selected tests to "running" status
+    setTests(prev => prev.map(test => 
+      testsToRun.includes(test.id) 
+        ? { ...test, status: "running" as TestStatus } 
+        : test
+    ))
+    
+    // Simulate test running with setTimeout
+    testsToRun.forEach(testId => {
+      const delay = Math.random() * 2000 + 1000 // Random delay between 1-3 seconds
+      
+      setTimeout(() => {
+        setTests(prev => prev.map(test => {
+          if (test.id === testId) {
+            const passed = Math.random() > 0.3 // 70% chance of passing
+            return {
+              ...test,
+              status: passed ? "passed" as TestStatus : "failed" as TestStatus,
+              duration: Math.random() * 1000 + 500,
+              error: passed ? undefined : "Test assertion failed: Expected result not achieved"
+            }
+          }
+          return test
+        }))
+      }, delay)
     })
-  }
+  }, [selectedTests, tests])
 
-  // Filter tests based on active tab
-  const filteredTests = tests.filter((test) => {
+  const handleResetTests = useCallback(() => {
+    setTests(prev => prev.map(test => ({
+      ...test,
+      status: "pending" as TestStatus,
+      duration: undefined,
+      error: undefined
+    })))
+  }, [])
+
+  const filteredTests = tests.filter(test => {
     if (activeTab === "all") return true
-    if (activeTab === "passed") return test.status === "passed"
-    if (activeTab === "failed") return test.status === "failed"
-    if (activeTab === "pending") return test.status === "pending"
-    return true
+    return test.status === activeTab
   })
 
-  // Calculate test stats
-  const passedCount = tests.filter((test) => test.status === "passed").length
-  const failedCount = tests.filter((test) => test.status === "failed").length
-  const pendingCount = tests.filter((test) => test.status === "pending" || test.status === "running").length
+  const selectedTest = selectedTestDetails 
+    ? tests.find(test => test.id === selectedTestDetails) 
+    : null
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Test Runner</CardTitle>
-        <CardDescription>Run and manage automated tests</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex space-x-2">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500 hover:bg-green-500/20">
-              <CheckCircle className="mr-1 h-3 w-3" />
-              {passedCount} Passed
-            </Badge>
-            <Badge variant="outline" className="bg-red-500/10 text-red-500 hover:bg-red-500/20">
-              <XCircle className="mr-1 h-3 w-3" />
-              {failedCount} Failed
-            </Badge>
-            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20">
-              <Clock className="mr-1 h-3 w-3" />
-              {pendingCount} Pending
-            </Badge>
-          </div>
-
-          <Button size="sm" onClick={handleRunTests} disabled={isRunning || selectedTests.length === 0}>
-            {isRunning ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Running...
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Run Tests
-              </>
-            )}
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Test Runner</h2>
+          <p className="text-muted-foreground">Run and manage test cases</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleResetTests}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reset
+          </Button>
+          <Button 
+            size="sm"
+            onClick={handleRunTests}
+            disabled={tests.some(test => test.status === "running")}
+          >
+            <PlayIcon className="mr-2 h-4 w-4" />
+            Run {selectedTests.length > 0 ? `Selected (${selectedTests.length})` : "All"}
           </Button>
         </div>
+      </div>
 
-        {isRunning && <Progress value={progress} className="h-2" />}
-
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="all">All Tests</TabsTrigger>
-            <TabsTrigger value="passed">Passed</TabsTrigger>
-            <TabsTrigger value="failed">Failed</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-0">
-            <div className="border rounded-md">
-              <div className="flex items-center p-2 border-b bg-muted/50">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="select-all"
-                    checked={selectedTests.length === filteredTests.length && filteredTests.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                  <Label htmlFor="select-all" className="text-xs font-medium">
-                    Select All
-                  </Label>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle>Test Cases</CardTitle>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <div className="flex items-center mr-3">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                    <span>{tests.filter(t => t.status === "passed").length} Passed</span>
+                  </div>
+                  <div className="flex items-center mr-3">
+                    <XCircle className="h-4 w-4 text-destructive mr-1" />
+                    <span>{tests.filter(t => t.status === "failed").length} Failed</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 text-muted-foreground mr-1" />
+                    <span>{tests.filter(t => t.status === "pending").length} Pending</span>
+                  </div>
                 </div>
               </div>
+              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="passed">Passed</TabsTrigger>
+                  <TabsTrigger value="failed">Failed</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardHeader>
+            <CardContent>
+              <TestList 
+                tests={filteredTests}
+                selectedTests={selectedTests}
+                onSelectTest={handleSelectTest}
+                onSelectTestDetails={setSelectedTestDetails}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-              <ScrollArea className="h-[300px]">
-                {filteredTests.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">No tests found</div>
-                ) : (
-                  <div className="divide-y">
-                    {filteredTests.map((test) => (
-                      <div key={test.id} className="p-3 hover:bg-muted/50">
-                        <div className="flex items-start space-x-3">
-                          <Checkbox
-                            id={`test-${test.id}`}
-                            checked={selectedTests.includes(test.id)}
-                            onCheckedChange={() => handleSelectTest(test.id)}
-                            disabled={isRunning && test.status === "running"}
-                          />
-
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`test-${test.id}`} className="font-medium cursor-pointer">
-                                {test.name}
-                              </Label>
-
-                              <div className="flex items-center space-x-2">
-                                {test.status === "passed" && (
-                                  <Badge variant="outline" className="bg-green-500/10 text-green-500">
-                                    Passed
-                                  </Badge>
-                                )}
-                                {test.status === "failed" && (
-                                  <Badge variant="outline" className="bg-red-500/10 text-red-500">
-                                    Failed
-                                  </Badge>
-                                )}
-                                {test.status === "pending" && (
-                                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500">
-                                    Pending
-                                  </Badge>
-                                )}
-                                {test.status === "running" && (
-                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-500">
-                                    <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-                                    Running
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-
-                            <p className="text-sm text-muted-foreground">{test.description}</p>
-
-                            {test.lastRun && (
-                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                                <span>Last run: {test.lastRun.toLocaleString()}</span>
-                                {test.duration && <span>Duration: {test.duration}ms</span>}
-                              </div>
-                            )}
-
-                            {test.error && (
-                              <div className="mt-2 p-2 bg-red-500/10 text-red-500 text-xs rounded">{test.error}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Details</CardTitle>
+              <CardDescription>
+                {selectedTest 
+                  ? `Viewing details for ${selectedTest.name}`
+                  : "Select a test to view details"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {selectedTest ? (
+                <TestDetails 
+                  test={selectedTest}
+                  onClose={() => setSelectedTestDetails(null)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                  <div className="rounded-full bg-muted p-3">
+                    <Filter className="h-6 w-6 text-muted-foreground" />
                   </div>
-                )}
-              </ScrollArea>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div className="text-sm text-muted-foreground">{tests.length} total tests</div>
-        <Button variant="outline" size="sm" disabled={isRunning}>
-          <FileText className="mr-2 h-4 w-4" />
-          Export Results
-        </Button>
-      </CardFooter>
-    </Card>
+                  <h3 className="mt-4 text-lg font-medium">No test selected</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Select a test from the list to view its details
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   )
 }

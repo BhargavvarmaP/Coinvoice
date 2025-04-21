@@ -16,9 +16,10 @@ import { EnhancedBusinessSolutions } from "@/components/enhanced-business-soluti
 import { LoginModal } from "@/components/auth/login-modal"
 import { SignupModal } from "@/components/auth/signup-modal"
 import { cn } from "@/lib/utils"
-import { Menu, X } from "lucide-react"
+import { Menu, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
+import Image from "next/image"
 
 export function EnhancedLandingPage() {
   const [activeSection, setActiveSection] = useState("hero")
@@ -35,7 +36,8 @@ export function EnhancedLandingPage() {
   const pricingRef = useRef<HTMLDivElement>(null)
   
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  
+  const { login, logout,isAuthenticated, isLoading } = useAuth()
   
   // Navigation items for scroll navigation
   const navigationItems = [
@@ -111,6 +113,14 @@ export function EnhancedLandingPage() {
   const handleSignupSuccess = () => {
     setSignupModalOpen(false)
     router.push("/dashboard")
+  }
+
+  const handleConnect = async () => {
+    try {
+      await login("web3") // or whichever provider you want to use
+    } catch (error) {
+      console.error("Connection failed:", error)
+    }
   }
 
   return (
@@ -221,7 +231,7 @@ export function EnhancedLandingPage() {
 
       {/* Login Modal */}
       <LoginModal 
-        open={loginModalOpen} 
+        open={handleConnect} 
         onOpenChange={setLoginModalOpen}
         onClose={() => setLoginModalOpen(false)} 
       />
@@ -341,3 +351,5 @@ export function EnhancedLandingPage() {
     </div>
   )
 }
+
+

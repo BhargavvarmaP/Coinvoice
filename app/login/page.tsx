@@ -72,7 +72,7 @@ export default function LoginPage() {
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-gray-500">Sign in to your account</p>
-        </div>
+      </div>
 
         <div className="grid gap-4">
           <Button
@@ -127,48 +127,48 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
               placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
+                  <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
               placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Please wait
-              </>
-            ) : (
+                      </>
+                    ) : (
               "Sign in"
-            )}
-          </Button>
-        </form>
+                    )}
+                  </Button>
+                </form>
 
         <div className="text-center text-sm">
           <a href="/forgot-password" className="text-primary hover:underline">
             Forgot your password?
           </a>
-        </div>
-      </Card>
+            </div>
+        </Card>
     </div>
   )
-} 
+}
